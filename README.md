@@ -26,10 +26,10 @@
 
 BitToro is a private cryptocurrency based on Monero, Loki and Triton. BitToro offers more practical solution for payments with its Flash Protocol :
 - Anonymous : untracable with mixins (Monero) 
-- Safe : service nodes checkpointing with 51% attacks impossible (Blink Protocol - In process)
-- Instant : transaction irreversible and confirmed immediately (Blink Protocol - In process)
-- Stable : payments' option with stable coin to reduce market voltality (SAO Protocol - In process)
-- Decentralized Data Apps (DDApps) : secure quick data layer through service nodes (In process)
+- Safe : service nodes checkpointing with 51% attacks impossible (Blink Protocol - Under working)
+- Instant : transaction irreversible and confirmed immediately (Blink Protocol - Under working)
+- Stable : payments' option with stable coin to reduce market voltality (SAO Protocol - Under working)
+- Decentralized Data Apps (DDApps) : secure quick data layer through service nodes (Under working)
 
 More information on the project can be found on the website and in the whitepaper.
 
