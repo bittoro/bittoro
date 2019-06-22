@@ -20,11 +20,11 @@
 
 ## Vulnerability disclosure
 
-- Check out our [Vulnerability Response Process](https://loki-project.github.io/loki-docs/Contributing/VULNERABILITY_RESPONSE_LOKI), encourages prompt disclosure of any Vulnerabilities
+- Check out our [Vulnerability Response Process](https://bittoro.github.io/bittoro-docs/Contributing/VULNERABILITY_RESPONSE_LOKI), encourages prompt disclosure of any Vulnerabilities
 
 ## Information
 
-BitToro is a private cryptocurrency based on Monero, Loki and Triton. BitToro offers more practical solution for payments with its Flash Protocol :
+BitToro is a private cryptocurrency based on Monero, BitToro and Triton. BitToro offers more practical solution for payments with its Flash Protocol :
 - Anonymous : untracable with mixins (Monero) 
 - Safe : service nodes checkpointing with 51% attacks impossible (Blink Protocol - Under working)
 - Instant : transaction irreversible and confirmed immediately (Blink Protocol - Under working)
@@ -81,15 +81,15 @@ Debian / Ubuntu one liner for all dependencies
 
 Clone recursively to pull-in needed submodule(s):
 
-`$ git clone --recursive https://github.com/loki-project/loki`
+`$ git clone --recursive https://github.com/bittoro/bittoro`
 
 If you already have a repo cloned, initialize and update:
 
-`$ cd loki && git submodule init && git submodule update`
+`$ cd bittoro && git submodule init && git submodule update`
 
 ### Build instructions
 
-Loki uses the CMake build system and a top-level [Makefile](Makefile) that
+BitToro uses the CMake build system and a top-level [Makefile](Makefile) that
 invokes cmake commands as needed.
 
 #### On Linux and OS X
@@ -97,7 +97,7 @@ invokes cmake commands as needed.
 * Install the dependencies
 * Change to the root of the source code directory, change to the most recent release branch, and build:
 
-        cd loki
+        cd bittoro
         git checkout master
         make
 
@@ -110,16 +110,16 @@ invokes cmake commands as needed.
     https://github.com/zeromq/cppzmq to `/usr/local/include` should fix that error.
 
     *Note*: The instructions above will compile the most stable release of the
-    Loki software. If you would like to use and test the most recent software,
+    BitToro software. If you would like to use and test the most recent software,
     use ```git checkout master```. The master branch may contain updates that are
     both unstable and incompatible with release software, though testing is always
     encouraged.
 
 * The resulting executables can be found in `build/release/bin`
 
-* Add `PATH="$PATH:$HOME/loki/build/release/bin"` to `.profile`
+* Add `PATH="$PATH:$HOME/bittoro/build/release/bin"` to `.profile`
 
-* Run Loki with `lokid --detach`
+* Run BitToro with `bittorod --detach`
 
 * **Optional**: build and run the test suite to verify the binaries:
 
@@ -147,7 +147,7 @@ Tested on a Raspberry Pi Zero with a clean install of minimal Raspbian Stretch (
 
 * `apt-get update && apt-get upgrade` to install all of the latest software
 
-* Install the dependencies for Loki from the 'Debian' column in the table above.
+* Install the dependencies for BitToro from the 'Debian' column in the table above.
 
 * Increase the system swap size:
 ```
@@ -158,10 +158,10 @@ Tested on a Raspberry Pi Zero with a clean install of minimal Raspbian Stretch (
 ```
 * If using an external hard disk without an external power supply, ensure it gets enough power to avoid hardware issues when syncing, by adding the line "max_usb_current=1" to /boot/config.txt
 
-* Clone loki and checkout most recent release version:
+* Clone bittoro and checkout most recent release version:
 ```
-        git clone https://github.com/loki-project/loki.git
-	cd loki
+        git clone https://github.com/bittoro/bittoro.git
+	cd bittoro
 	git checkout master
 ```
 * Build:
@@ -172,15 +172,15 @@ Tested on a Raspberry Pi Zero with a clean install of minimal Raspbian Stretch (
 
 * The resulting executables can be found in `build/release/bin`
 
-* Add `PATH="$PATH:$HOME/loki/build/release/bin"` to `.profile`
+* Add `PATH="$PATH:$HOME/bittoro/build/release/bin"` to `.profile`
 
-* Run Loki with `lokid --detach`
+* Run BitToro with `bittorod --detach`
 
 * You may wish to reduce the size of the swap file after the build has finished, and delete the boost directory from your home directory
 
 #### *Note for Raspbian Jessie users:*
 
-If you are using the older Raspbian Jessie image, compiling Loki is a bit more complicated. The version of Boost available in the Debian Jessie repositories is too old to use with Loki, and thus you must compile a newer version yourself. The following explains the extra steps, and has been tested on a Raspberry Pi 2 with a clean install of minimal Raspbian Jessie.
+If you are using the older Raspbian Jessie image, compiling BitToro is a bit more complicated. The version of Boost available in the Debian Jessie repositories is too old to use with BitToro, and thus you must compile a newer version yourself. The following explains the extra steps, and has been tested on a Raspberry Pi 2 with a clean install of minimal Raspbian Jessie.
 
 * As before, `apt-get update && apt-get upgrade` to install all of the latest software, and increase the system swap size
 
@@ -191,7 +191,7 @@ If you are using the older Raspbian Jessie image, compiling Loki is a bit more c
 	sudo /etc/init.d/dphys-swapfile start  
 ```
 
-* Then, install the dependencies for Loki except `libunwind` and `libboost-all-dev`
+* Then, install the dependencies for BitToro except `libunwind` and `libboost-all-dev`
 
 * Install the latest version of boost (this may first require invoking `apt-get remove --purge libboost*` to remove a previous version if you're not using a clean install):
 ```
@@ -208,7 +208,7 @@ If you are using the older Raspbian Jessie image, compiling Loki is a bit more c
 ```
 * Wait ~4 hours
 
-* From here, follow the [general Raspberry Pi instructions](#on-the-raspberry-pi) from the "Clone loki and checkout most recent release version" step.
+* From here, follow the [general Raspberry Pi instructions](#on-the-raspberry-pi) from the "Clone bittoro and checkout most recent release version" step.
 
 #### On Windows:
 
@@ -254,15 +254,15 @@ application.
 
 * To git clone, run:
 
-        git clone --recursive https://github.com/loki-project/loki.git
+        git clone --recursive https://github.com/bittoro/bittoro.git
 
 **Building**
 
 * Change to the cloned directory, run:
 	
-        cd ~/loki
+        cd ~/bittoro
 
-* **Optional**: if you would like a specific [version/tag](https://github.com/loki-project/loki/tags), do a git checkout for that version. eg. 'v2.0.3'. If you dont care about the version and just want binaries from master, skip this step:
+* **Optional**: if you would like a specific [version/tag](https://github.com/bittoro/bittoro/tags), do a git checkout for that version. eg. 'v2.0.3'. If you dont care about the version and just want binaries from master, skip this step:
 	
         git checkout v2.0.3
 
@@ -274,7 +274,7 @@ application.
 
         make release-static-win32
 
-* The resulting executables can be found in `build/<MinGW version>/<loki version>/release/bin`
+* The resulting executables can be found in `build/<MinGW version>/<bittoro version>/release/bin`
 
 * **Optional**: to build Windows binaries suitable for debugging on a 64-bit system, run:
 
@@ -284,11 +284,11 @@ application.
 
         make debug-static-win32
 
-* The resulting executables can be found in `build/<MinGW version>/<loki version>/debug/bin`
+* The resulting executables can be found in `build/<MinGW version>/<bittoro version>/debug/bin`
 
 ### On FreeBSD:
 
-The project can be built from scratch by following instructions for Linux above. If you are running loki in a jail you need to add the flag: `allow.sysvipc=1` to your jail configuration, otherwise lmdb will throw the error message: `Failed to open lmdb environment: Function not implemented`.
+The project can be built from scratch by following instructions for Linux above. If you are running bittoro in a jail you need to add the flag: `allow.sysvipc=1` to your jail configuration, otherwise lmdb will throw the error message: `Failed to open lmdb environment: Function not implemented`.
 
 ### On OpenBSD:
 
@@ -303,7 +303,7 @@ The doxygen and graphviz packages are optional and require the xbase set.
 The Boost package has a bug that will prevent librpc.a from building correctly. In order to fix this, you will have to Build boost yourself from scratch. Follow the directions here (under "Building Boost"):
 https://github.com/bitcoin/bitcoin/blob/master/doc/build-openbsd.md
 
-You will have to add the serialization, date_time, and regex modules to Boost when building as they are needed by Loki.
+You will have to add the serialization, date_time, and regex modules to Boost when building as they are needed by BitToro.
 
 To build: `env CC=egcc CXX=eg++ CPP=ecpp DEVELOPER_LOCAL_TOOLS=1 BOOST_ROOT=/path/to/the/boost/you/built make release-static-64`
 
@@ -376,7 +376,7 @@ cmake ..
 doas make install
 ```
 
-Build loki: `env DEVELOPER_LOCAL_TOOLS=1 BOOST_ROOT=/usr/local make release-static`
+Build bittoro: `env DEVELOPER_LOCAL_TOOLS=1 BOOST_ROOT=/usr/local make release-static`
 
 #### OpenBSD >= 6.4
 
@@ -409,13 +409,13 @@ Then you can run make as usual.
 ### On Linux for Android (using docker):
 
         # Build image (for ARM 32-bit)
-        docker build -f utils/build_scripts/android32.Dockerfile -t loki-android .
+        docker build -f utils/build_scripts/android32.Dockerfile -t bittoro-android .
         # Build image (for ARM 64-bit)
-        docker build -f utils/build_scripts/android64.Dockerfile -t loki-android .
+        docker build -f utils/build_scripts/android64.Dockerfile -t bittoro-android .
         # Create container
-        docker create -it --name loki-android loki-android bash
+        docker create -it --name bittoro-android bittoro-android bash
         # Get binaries
-        docker cp loki-android:/src/build/release/bin .
+        docker cp bittoro-android:/src/build/release/bin .
 
 ### Building portable statically linked binaries
 
@@ -443,38 +443,38 @@ You can also cross-compile static binaries on Linux for Windows and macOS with t
 
 The required packages are the names for each toolchain on apt. Depending on your distro, they may have different names.
 
-Using `depends` might also be easier to compile Loki on Windows than using MSYS. Activate Windows Subsystem for Linux (WSL) with a distro (for example Ubuntu), install the apt build-essentials and follow the `depends` steps as depicted above.
+Using `depends` might also be easier to compile BitToro on Windows than using MSYS. Activate Windows Subsystem for Linux (WSL) with a distro (for example Ubuntu), install the apt build-essentials and follow the `depends` steps as depicted above.
 
 The produced binaries still link libc dynamically. If the binary is compiled on a current distribution, it might not run on an older distribution with an older installation of libc. Passing `-DBACKCOMPAT=ON` to cmake will make sure that the binary will run on systems having at least libc version 2.17.
 
-## Installing Loki from a package
+## Installing BitToro from a package
 
 * Docker
 
         # Build using all available cores
-        docker build -t loki .
+        docker build -t bittoro .
 
         # or build using a specific number of cores (reduce RAM requirement)
-        docker build --build-arg NPROC=1 -t loki .
+        docker build --build-arg NPROC=1 -t bittoro .
 
         # either run in foreground
-        docker run -it -v /loki/chain:/root/.loki -v /loki/wallet:/wallet -p 22022:22022 loki
+        docker run -it -v /bittoro/chain:/root/.bittoro -v /bittoro/wallet:/wallet -p 22022:22022 bittoro
 
         # or in background
-        docker run -it -d -v /loki/chain:/root/.loki -v /loki/wallet:/wallet -p 22022:22022 loki
+        docker run -it -d -v /bittoro/chain:/root/.bittoro -v /bittoro/wallet:/wallet -p 22022:22022 bittoro
 
 * The build needs 3 GB space.
 * Wait one  hour or more
 
-## Running lokid
+## Running bittorod
 
 The build places the binary in `bin/` sub-directory within the build directory
 from which cmake was invoked (repository root by default). To run in
 foreground:
 
-    ./bin/lokid
+    ./bin/bittorod
 
-To list all available options, run `./bin/lokid --help`.  Options can be
+To list all available options, run `./bin/bittorod --help`.  Options can be
 specified either on the command line or in a configuration file passed by the
 `--config-file` argument.  To specify an option in the configuration file, add
 a line with the syntax `argumentname=value`, where `argumentname` is the name
@@ -482,7 +482,7 @@ of the argument without the leading dashes, for example `log-level=1`.
 
 To run in background:
 
-    ./bin/lokid --log-file lokid.log --detach
+    ./bin/bittorod --log-file bittorod.log --detach
 
 ## Internationalization
 
@@ -490,31 +490,31 @@ See [README.i18n.md](README.i18n.md).
 
 ## Using Tor
 
-While Loki isn't made to integrate with Tor, it can be used wrapped with torsocks, by
+While BitToro isn't made to integrate with Tor, it can be used wrapped with torsocks, by
 setting the following configuration parameters and environment variables:
 
 * `--p2p-bind-ip 127.0.0.1` on the command line or `p2p-bind-ip=127.0.0.1` in
-  lokid.conf to disable listening for connections on external interfaces.
-* `--no-igd` on the command line or `no-igd=1` in lokid.conf to disable IGD
+  bittorod.conf to disable listening for connections on external interfaces.
+* `--no-igd` on the command line or `no-igd=1` in bittorod.conf to disable IGD
   (UPnP port forwarding negotiation), which is pointless with Tor.
 * `DNS_PUBLIC=tcp` or `DNS_PUBLIC=tcp://x.x.x.x` where x.x.x.x is the IP of the
   desired DNS server, for DNS requests to go over TCP, so that they are routed
-  through Tor. When IP is not specified, lokid uses the default list of
+  through Tor. When IP is not specified, bittorod uses the default list of
   servers defined in [src/common/dns_utils.cpp](src/common/dns_utils.cpp).
-* `TORSOCKS_ALLOW_INBOUND=1` to tell torsocks to allow lokid to bind to interfaces
+* `TORSOCKS_ALLOW_INBOUND=1` to tell torsocks to allow bittorod to bind to interfaces
    to accept connections from the wallet. On some Linux systems, torsocks
    allows binding to localhost by default, so setting this variable is only
    necessary to allow binding to local LAN/VPN interfaces to allow wallets to
    connect from remote hosts. On other systems, it may be needed for local wallets
    as well.
 * Do NOT pass `--detach` when running through torsocks with systemd, (see
-  [utils/systemd/lokid.service](utils/systemd/lokid.service) for details).
+  [utils/systemd/bittorod.service](utils/systemd/bittorod.service) for details).
 * If you use the wallet with a Tor daemon via the loopback IP (eg, 127.0.0.1:9050),
   then use `--untrusted-daemon` unless it is your own hidden service.
 
-Example command line to start lokid through Tor:
+Example command line to start bittorod through Tor:
 
-    DNS_PUBLIC=tcp torsocks lokid --p2p-bind-ip 127.0.0.1 --no-igd
+    DNS_PUBLIC=tcp torsocks bittorod --p2p-bind-ip 127.0.0.1 --no-igd
 
 ### Using Tor on Tails
 
@@ -523,12 +523,12 @@ to add a rule to allow this connection too, in addition to telling torsocks to
 allow inbound connections. Full example:
 
     sudo iptables -I OUTPUT 2 -p tcp -d 127.0.0.1 -m tcp --dport 18081 -j ACCEPT
-    DNS_PUBLIC=tcp torsocks ./lokid --p2p-bind-ip 127.0.0.1 --no-igd --rpc-bind-ip 127.0.0.1 \
+    DNS_PUBLIC=tcp torsocks ./bittorod --p2p-bind-ip 127.0.0.1 --no-igd --rpc-bind-ip 127.0.0.1 \
         --data-dir /home/amnesia/Persistent/your/directory/to/the/blockchain
 
 ## Debugging
 
-This section contains general instructions for debugging failed installs or problems encountered with Loki. First ensure you are running the latest version built from the Github repo.
+This section contains general instructions for debugging failed installs or problems encountered with BitToro. First ensure you are running the latest version built from the Github repo.
 
 ### Obtaining stack traces and core dumps on Unix systems
 
@@ -541,7 +541,7 @@ Run the build.
 Once it stalls, enter the following command:
 
 ```
-gdb /path/to/lokid `pidof lokid`
+gdb /path/to/bittorod `pidof bittorod`
 ```
 
 Type `thread apply all bt` within gdb in order to obtain the stack trace
@@ -554,21 +554,21 @@ Enter `echo core | sudo tee /proc/sys/kernel/core_pattern` to stop cores from be
 
 Run the build.
 
-When it terminates with an output along the lines of "Segmentation fault (core dumped)", there should be a core dump file in the same directory as lokid. It may be named just `core`, or `core.xxxx` with numbers appended.
+When it terminates with an output along the lines of "Segmentation fault (core dumped)", there should be a core dump file in the same directory as bittorod. It may be named just `core`, or `core.xxxx` with numbers appended.
 
 You can now analyse this core dump with `gdb` as follows:
 
-`gdb /path/to/lokid /path/to/dumpfile`
+`gdb /path/to/bittorod /path/to/dumpfile`
 
 Print the stack trace with `bt`
 
-* To run loki within gdb:
+* To run bittoro within gdb:
 
-Type `gdb /path/to/lokid`
+Type `gdb /path/to/bittorod`
 
 Pass command-line options with `--args` followed by the relevant arguments
 
-Type `run` to run lokid
+Type `run` to run bittorod
 
 ### Analysing memory corruption
 
@@ -576,15 +576,15 @@ There are two tools available:
 
 * ASAN
 
-Configure Loki with the -D SANITIZE=ON cmake flag, eg:
+Configure BitToro with the -D SANITIZE=ON cmake flag, eg:
 
     cd build/debug && cmake -D SANITIZE=ON -D CMAKE_BUILD_TYPE=Debug ../..
 
-You can then run the loki tools normally. Performance will typically halve.
+You can then run the bittoro tools normally. Performance will typically halve.
 
 * valgrind
 
-Install valgrind and run as `valgrind /path/to/lokid`. It will be very slow.
+Install valgrind and run as `valgrind /path/to/bittorod`. It will be very slow.
 
 ### LMDB
 
@@ -592,7 +592,7 @@ Instructions for debugging suspected blockchain corruption as per @HYC
 
 There is an `mdb_stat` command in the LMDB source that can print statistics about the database but it's not routinely built. This can be built with the following command:
 
-`cd ~/loki/external/db_drivers/liblmdb && make`
+`cd ~/bittoro/external/db_drivers/liblmdb && make`
 
 The output of `mdb_stat -ea <path to blockchain dir>` will indicate inconsistencies in the blocks, block_heights and block_info table.
 
