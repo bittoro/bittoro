@@ -1,14 +1,14 @@
 # BitToro
 
 <p align="center">
-    <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://gitlab.com/bittoro/bittoro/badges/dev/pipeline.svg" /></a>
+    <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://github.com/bittoro/bittoro/raw/master/logo/xtor30x36.png" /></a>
 </p>
-Copyright (c) 2019 The BitToro Project.
-Copyright (c) 2019 The TurtleCoin Developers
-Copyright (c) 2018-2019 Project Triton.
-Copyright (c) 2018-2019 The Loki Project.   
-Portions Copyright (c) 2014-2019 The Monero Project.   
-Portions Copyright (c) 2012-2013 The Cryptonote developers.
+- Copyright (c) 2019 The BitToro Project.
+- Copyright (c) 2019 The TurtleCoin Developers
+- Copyright (c) 2018-2019 Project Triton.
+- Copyright (c) 2018-2019 The Loki Project.   
+- Portions Copyright (c) 2014-2019 The Monero Project.   
+- Portions Copyright (c) 2012-2013 The Cryptonote developers.
 
 ## Development resources
 
