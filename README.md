@@ -1,7 +1,7 @@
 # BitToro
 
 <p align="center">
-    <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://github.com/bittoro/bittoro/raw/master/logo/xtor30x36.png" /></a>
+    <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://raw.githubusercontent.com/bittoro/bittoro/master/logo/xtor30x3.png" /></a>
 </p>
 - Copyright (c) 2019 The BitToro Project.
 - Copyright (c) 2019 The TurtleCoin Developers
