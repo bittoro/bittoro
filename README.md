@@ -3,8 +3,8 @@
 <p align="center">
     <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://raw.githubusercontent.com/bittoro/bittoro/master/logo/xtor30x3.png" /></a>
 </p>
-[![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
 
+[![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
 
 - Copyright (c) 2019 The BitToro Project.
 - Copyright (c) 2019 The TurtleCoin Developers
