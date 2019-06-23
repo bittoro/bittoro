@@ -3,14 +3,15 @@
 <p align="center">
     <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://raw.githubusercontent.com/bittoro/bittoro/master/logo/xtor30x3.png" /></a>
 </p>
+[![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
+
+
 - Copyright (c) 2019 The BitToro Project.
 - Copyright (c) 2019 The TurtleCoin Developers
 - Copyright (c) 2018-2019 Project Triton.
 - Copyright (c) 2018-2019 The Loki Project.   
 - Portions Copyright (c) 2014-2019 The Monero Project.   
 - Portions Copyright (c) 2012-2013 The Cryptonote developers.
-
-[![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
 
 ## Development resources
 
