@@ -45,7 +45,7 @@ BitToro is a private cryptocurrency based on Monero, BitToro and Triton. BitToro
 - Stable : payments' option with stable coin to reduce market voltality (SAO Protocol - Under working)
 - Decentralized Data Apps (DDApps) : secure quick data layer through service nodes (Under working)
 
-![image](https://github.com/bittoro/bittoro/raw/master/logo/draftfig01.png)
+![image](https://github.com/bittoro/bittoro/raw/master/logo/draftfig02.png)
 <p align="center">
 More information on the project can be found on the website and in the whitepaper.
 </p>
