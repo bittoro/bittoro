@@ -13,3 +13,6 @@
 [submodule "external/randomx"]
 	path = external/randomx
 	url = https://github.com/loki-project/RandomX
+[submodule "external/argon2"]
+	path = external/argon2
+	url = https://github.com/bittoro/argon2.git
