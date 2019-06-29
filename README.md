@@ -30,7 +30,7 @@
 - Telegram: [t.me/BitToroCommunity](https://t.me/BitToroCommunity)
 - Mail: [team@bittoro.network](mailto:team@bittoro.network)
 - GitHub: [https://github.com/bittoro/bittoro](https://github.com/bittoro/bittoro)
-- Discord: [https://discord.gg/VsWZvB](https://discord.gg/VsWZvB)
+- Discord: [https://discord.gg/VTReDjS](https://discord.gg/VTReDjS)
 
 ## Vulnerability disclosure
 
