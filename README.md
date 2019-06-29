@@ -14,16 +14,7 @@
 ## Development resources
 | Operating System      | Processor | Status |
 | --------------------- | -------- |--------|
-| Ubuntu 16.04          |  i686    | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
 | Ubuntu 16.04          |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| Ubuntu 16.04          |  armv7   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| Debian Stable         |  armv8   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| macOS 10.11             |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| macOS 10.12             |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| macOS 10.13             |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| FreeBSD 11            |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| DragonFly BSD 4.6     |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| Windows (MSYS2/MinGW) |  i686    | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
 | Windows (MSYS2/MinGW) |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
 
 - Web: [bittoro.network](https://bittoro.network)
