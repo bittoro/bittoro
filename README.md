@@ -30,7 +30,7 @@
 - Telegram: [t.me/BitToroCommunity](https://t.me/BitToroCommunity)
 - Mail: [team@bittoro.network](mailto:team@bittoro.network)
 - GitHub: [https://github.com/bittoro/bittoro](https://github.com/bittoro/bittoro)
-- Discord: [https://discord.gg/xxxxx](https://discord.gg/xxxxx)
+- Discord: [https://discord.gg/VsWZvB](https://discord.gg/VsWZvB)
 
 ## Vulnerability disclosure
 
@@ -38,12 +38,12 @@
 
 ## Information
 
-BitToro is a private cryptocurrency based on Monero, BitToro and Triton. BitToro offers more practical solution for payments with its Flash Protocol :
+BitToro is a private cryptocurrency based on Monero, Loki and Triton. BitToro offers more practical solution for payments with its Flash Protocol. Third party apps using Bittoro's privacy data layer will pay fee per kB to service nodes.
 - Anonymous : untracable with mixins (Monero) 
-- Safe : service nodes checkpointing with 51% attacks impossible (Blink Protocol - Under working)
-- Instant : transaction irreversible and confirmed immediately (Blink Protocol - Under working)
-- Stable : payments' option with stable coin to reduce market voltality (SAO Protocol - Under working)
-- Decentralized Data Apps (DDApps) : secure quick data layer through service nodes (Under working)
+- Safe : service nodes checkpointing against 51% attacks on blockchain (based on Blink - active at block 50k ~ 30th July 2019)
+- Instant : transaction irreversible and confirmed immediately (based on Blink - active at block 50k ~ 30th July 2019)
+- Stable : payments' option with stable coin to reduce market voltality (based on SAO - Under working)
+- Decentralized Data Apps (DDApps) : secure quick data layer through service nodes
 
 ![image](https://github.com/bittoro/bittoro/raw/master/logo/draftfig02.png)
 <p align="center">

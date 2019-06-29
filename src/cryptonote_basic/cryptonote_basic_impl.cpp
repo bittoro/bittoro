@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018, The Monero Project
+// Copyright (c) 2014-2019, The Monero Project
 // Copyright (c)      2018, The Loki Project
 //
 // All rights reserved.
@@ -71,16 +71,7 @@ namespace cryptonote {
   //-----------------------------------------------------------------------------------------------
   size_t get_min_block_weight(uint8_t version)
   {
-    if (version < 2)
-      return CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V1;
-    if (version < 5)
-      return CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V2;
     return CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V5;
-  }
-  //-----------------------------------------------------------------------------------------------
-  size_t get_max_block_size()
-  {
-    return CRYPTONOTE_MAX_BLOCK_SIZE;
   }
   //-----------------------------------------------------------------------------------------------
   size_t get_max_tx_size()
@@ -89,13 +80,6 @@ namespace cryptonote {
   }
   //-----------------------------------------------------------------------------------------------
   bool get_base_block_reward(size_t median_weight, size_t current_block_weight, uint64_t already_generated_coins, uint64_t &reward, uint8_t version, uint64_t height) {
-
-    //premine reward
-    if (already_generated_coins == 0)
-    {
-      reward = COIN; // initial amount
-      return true;
-    }
 
     static_assert(DIFFICULTY_TARGET_V2%60==0,"difficulty targets must be a multiple of 60");
 
@@ -107,8 +91,11 @@ namespace cryptonote {
       base_reward = 0;
     }
 
-    if (version >= 8)
-      base_reward = 30000000000.0 + 1100000000000.0 / loki::exp2(height / (1440.0 * 360.0)); // halved every year. - 1 year
+    if (version >= 8) {
+      base_reward = 30000000000.0 + 1600000000000.0 / loki::exp2(height / (1440.0 * 360.0)); // halved every year. - 1 year
+	} else if (median_weight > 0) {
+	  base_reward = 4000000000000000.0;
+	}
 
     uint64_t full_reward_zone = get_min_block_weight(version);
 

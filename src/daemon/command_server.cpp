@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018, The Monero Project
+// Copyright (c) 2014-2019, The Monero Project
 // Copyright (c)      2018, The Loki Project
 // 
 // All rights reserved.
@@ -35,7 +35,6 @@
 
 #include "common/loki_integration_test_hooks.h"
 
-
 #undef LOKI_DEFAULT_LOG_CATEGORY
 #define LOKI_DEFAULT_LOG_CATEGORY "daemon"
 
@@ -47,10 +46,11 @@ t_command_server::t_command_server(
     uint32_t ip
   , uint16_t port
   , const boost::optional<tools::login>& login
+  , const epee::net_utils::ssl_options_t& ssl_options
   , bool is_rpc
   , cryptonote::core_rpc_server* rpc_server
   )
-  : m_parser(ip, port, login, is_rpc, rpc_server)
+  : m_parser(ip, port, login, ssl_options, is_rpc, rpc_server)
   , m_command_lookup()
   , m_is_rpc(is_rpc)
 {
@@ -80,6 +80,11 @@ t_command_server::t_command_server(
       "print_cn"
     , std::bind(&t_command_parser_executor::print_connections, &m_parser, p::_1)
     , "Print the current connections."
+    );
+  m_command_lookup.set_handler(
+      "print_net_stats"
+    , std::bind(&t_command_parser_executor::print_net_stats, &m_parser, p::_1)
+    , "Print network statistics."
     );
   m_command_lookup.set_handler(
       "print_bc"
@@ -144,13 +149,18 @@ t_command_server::t_command_server(
   m_command_lookup.set_handler(
       "start_mining"
     , std::bind(&t_command_parser_executor::start_mining, &m_parser, p::_1)
-    , "start_mining <addr> [<threads>] [do_background_mining] [ignore_battery]"
-    , "Start mining for specified address. Defaults to 1 thread and no background mining."
+    , "start_mining <addr> [<threads>|auto] [do_background_mining] [ignore_battery]"
+    , "Start mining for specified address. Defaults to 1 thread and no background mining. Use \"auto\" to autodetect optimal number of threads."
     );
   m_command_lookup.set_handler(
       "stop_mining"
     , std::bind(&t_command_parser_executor::stop_mining, &m_parser, p::_1)
     , "Stop mining."
+    );
+  m_command_lookup.set_handler(
+      "mining_status"
+    , std::bind(&t_command_parser_executor::mining_status, &m_parser, p::_1)
+    , "Show current mining status."
     );
   m_command_lookup.set_handler(
       "print_pool"
@@ -343,6 +353,69 @@ t_command_server::t_command_server(
     , std::bind(&t_command_parser_executor::check_blockchain_pruning, &m_parser, p::_1)
     , "Check the blockchain pruning."
     );
+    m_command_lookup.set_handler(
+      "print_checkpoints"
+    , std::bind(&t_command_parser_executor::print_checkpoints, &m_parser, p::_1)
+    , ""
+    );
+
+#if defined(LOKI_ENABLE_INTEGRATION_TEST_HOOKS)
+    m_command_lookup.set_handler(
+      "relay_votes_and_uptime", std::bind([rpc_server](std::vector<std::string> const &args) {
+        rpc_server->on_relay_uptime_and_votes();
+        return true;
+      }, p::_1)
+    , ""
+    );
+
+    m_command_lookup.set_handler(
+      "integration_test", std::bind([rpc_server](std::vector<std::string> const &args) {
+        bool valid_cmd = false;
+        if (args.size() == 1)
+        {
+          valid_cmd = true;
+          if (args[0] == "toggle_checkpoint_quorum")
+          {
+            loki::integration_test.disable_checkpoint_quorum = !loki::integration_test.disable_checkpoint_quorum;
+          }
+          else if (args[0] == "toggle_obligation_quorum")
+          {
+            loki::integration_test.disable_obligation_quorum = !loki::integration_test.disable_obligation_quorum;
+          }
+          else if (args[0] == "toggle_obligation_uptime_proof")
+          {
+            loki::integration_test.disable_obligation_uptime_proof = !loki::integration_test.disable_obligation_uptime_proof;
+          }
+          else if (args[0] == "toggle_obligation_checkpointing")
+          {
+            loki::integration_test.disable_obligation_checkpointing = !loki::integration_test.disable_obligation_checkpointing;
+          }
+          else
+          {
+            valid_cmd = false;
+          }
+
+          if (valid_cmd) std::cout << args[0] << " toggled";
+        }
+        else if (args.size() == 3)
+        {
+          uint64_t num_blocks = 0;
+          if (args[0] == "debug_mine_n_blocks" && epee::string_tools::get_xtype_from_string(num_blocks, args[2]))
+          {
+            rpc_server->on_debug_mine_n_blocks(args[1], num_blocks);
+            valid_cmd = true;
+          }
+        }
+
+        if (!valid_cmd)
+          std::cout << "integration_test invalid command";
+
+        loki::write_redirected_stdout_to_shared_mem();
+        return true;
+      }, p::_1)
+    , ""
+    );
+#endif
 }
 
 bool t_command_server::process_command_str(const std::string& cmd)
@@ -372,8 +445,8 @@ bool t_command_server::start_handling(std::function<void(void)> exit_handler)
   auto handle_shared_mem_ins_and_outs = [&]()
   {
     // TODO(doyle): Hack, don't hook into input until the daemon has completely initialised, i.e. you can print the status
-    while(!loki::core_is_idle) {}
-    mlog_set_categories("");
+    while(!loki::integration_test.core_is_idle) {}
+    mlog_set_categories(""); // TODO(doyle): We shouldn't have to do this.
 
     for (;;)
     {

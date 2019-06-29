@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018, The Monero Project
+// Copyright (c) 2014-2019, The Monero Project
 // Copyright (c)      2018, The Loki Project
 //
 // All rights reserved.
@@ -153,8 +153,8 @@ namespace wallet_args
 
       if (command_line::get_arg(vm, command_line::arg_help))
       {
-        Print(print) << "Loki '" << LOKI_RELEASE_NAME << "' (v" << LOKI_VERSION_FULL << ")" << ENDL;
-        Print(print) << wallet_args::tr("This is the command line loki wallet. It needs to connect to a loki\n"
+        Print(print) << "BitToro '" << LOKI_RELEASE_NAME << "' (v" << LOKI_VERSION_FULL << ")" << ENDL;
+        Print(print) << wallet_args::tr("This is the command line bittoro wallet. It needs to connect to a bittoro\n"
 												  "daemon to work correctly.") << ENDL;
         Print(print) << wallet_args::tr("Usage:") << ENDL << "  " << usage;
         Print(print) << desc_all;
@@ -163,7 +163,7 @@ namespace wallet_args
       }
       else if (command_line::get_arg(vm, command_line::arg_version))
       {
-        Print(print) << "Loki '" << LOKI_RELEASE_NAME << "' (v" << LOKI_VERSION_FULL << ")";
+        Print(print) << "BitToro '" << LOKI_RELEASE_NAME << "' (v" << LOKI_VERSION_FULL << ")";
         should_terminate = true;
         return true;
       }
@@ -214,7 +214,7 @@ namespace wallet_args
     if (!command_line::is_arg_defaulted(vm, arg_max_concurrency))
       tools::set_max_concurrency(command_line::get_arg(vm, arg_max_concurrency));
 
-    Print(print) << "Loki '" << LOKI_RELEASE_NAME << "' (v" << LOKI_VERSION_FULL << ")";
+    Print(print) << "BitToro '" << LOKI_RELEASE_NAME << "' (v" << LOKI_VERSION_FULL << ")";
 
     if (!command_line::is_arg_defaulted(vm, arg_log_level))
       MINFO("Setting log level = " << command_line::get_arg(vm, arg_log_level));
