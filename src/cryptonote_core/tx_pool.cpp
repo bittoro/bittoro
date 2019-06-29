@@ -1204,8 +1204,9 @@ namespace cryptonote
       {
         //if we already failed on this height and id, skip actual ring signature check
         if(txd.last_failed_id == m_blockchain.get_block_id_by_height(txd.last_failed_height)) {
-			MERROR("Failed to parse tx from txpool txd.last_failed_id=" << txd.last_failed_id << ", txd.last_failed_height="<< txd.last_failed_height);
-          // return false;
+			MERROR("Please report to BitToro devs. Error : tx failed with txd.last_failed_id=" << txd.last_failed_id << ", txd.last_failed_height="<< txd.last_failed_height);
+           // FIXME How can it be triggered ?
+           return false;
 		}
         //check ring signature again, it is possible (with very small chance) that this transaction become again valid
         tx_verification_context tvc;
