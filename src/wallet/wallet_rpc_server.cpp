@@ -212,7 +212,7 @@ namespace tools
           string_encoding::base64_encode(rand_128bit.data(), rand_128bit.size())
         );
 
-        std::string temp = "loki-wallet-rpc." + bind_port + ".login";
+        std::string temp = "bittoro-wallet-rpc." + bind_port + ".login";
         rpc_login_file = tools::private_file::create(temp);
         if (!rpc_login_file.handle())
         {
@@ -259,7 +259,7 @@ namespace tools
     tools::wallet2::BackgroundMiningSetupType setup = m_wallet->setup_background_mining();
     if (setup == tools::wallet2::BackgroundMiningNo)
     {
-      MLOG_RED(el::Level::Warning, "Background mining not enabled. Run \"set setup-background-mining 1\" in loki-wallet-cli to change.");
+      MLOG_RED(el::Level::Warning, "Background mining not enabled. Run \"set setup-background-mining 1\" in bittoro-wallet-cli to change.");
       return;
     }
 
@@ -285,7 +285,7 @@ namespace tools
       MINFO("The daemon is not set up to background mine.");
       MINFO("With background mining enabled, the daemon will mine when idle and not on batttery.");
       MINFO("Enabling this supports the network you are using, and makes you eligible for receiving new Loki");
-      MINFO("Set setup-background-mining to 1 in loki-wallet-cli to change.");
+      MINFO("Set setup-background-mining to 1 in bittoro-wallet-cli to change.");
       return;
     }
 
@@ -1804,14 +1804,13 @@ namespace tools
     wallet2::transfer_container transfers;
     m_wallet->get_transfers(transfers);
 
-    bool transfers_found = false;
     for (const auto& td : transfers)
     {
       if (!filter || available != td.m_spent)
       {
         if (req.account_index != td.m_subaddr_index.major || (!req.subaddr_indices.empty() && req.subaddr_indices.count(td.m_subaddr_index.minor) == 0))
           continue;
-        transfers_found = true;
+
         wallet_rpc::transfer_details rpc_transfers;
         rpc_transfers.amount       = td.amount();
         rpc_transfers.spent        = td.m_spent;
@@ -4517,12 +4516,12 @@ int main(int argc, char** argv) {
   bool should_terminate = false;
   std::tie(vm, should_terminate) = wallet_args::main(
     argc, argv,
-    "loki-wallet-rpc [--wallet-file=<file>|--generate-from-json=<file>|--wallet-dir=<directory>] [--rpc-bind-port=<port>]",
+    "bittoro-wallet-rpc [--wallet-file=<file>|--generate-from-json=<file>|--wallet-dir=<directory>] [--rpc-bind-port=<port>]",
     tools::wallet_rpc_server::tr("This is the RPC loki wallet. It needs to connect to a loki\ndaemon to work correctly."),
     desc_params,
     po::positional_options_description(),
     [](const std::string &s, bool emphasis){ epee::set_console_color(emphasis ? epee::console_color_white : epee::console_color_default, true); std::cout << s << std::endl; if (emphasis) epee::reset_console_color(); },
-    "loki-wallet-rpc.log",
+    "bittoro-wallet-rpc.log",
     true
   );
   if (!vm)
