@@ -1359,7 +1359,7 @@ namespace hw {
       bool &is_change = found_change; // NOTE(loki): Alias our param into theirs so we don't have to change much code.
 
       if (change_addr && dst_entr == *change_addr && !is_change)
-		is_change = true; // sending change to yourself; derivation = a*R
+        is_change = true; // sending change to yourself; derivation = a*R
 
       int offset = set_command_header_noopt(INS_GEN_TXOUT_KEYS);
       //tx_version

@@ -940,14 +940,10 @@ namespace cryptonote
     res.address = get_account_address_as_str(nettype(), false, lMiningAdr);
     const uint8_t major_version = m_core.get_blockchain_storage().get_current_hard_fork_version();
 
-    if (major_version >= network_version_7 && major_version <= network_version_10_bulletproofs)
-      res.pow_algorithm = "Cryptonight Heavy (Variant 2)";
-    else
-      res.pow_algorithm = "Cryptonight Turtle Light (Variant 2)";
-//    res.pow_algorithm =
-//        major_version >= network_version_12_checkpointing    ? "RandomX (LOKI variant)"               :
-//        major_version == network_version_11_infinite_staking ? "Cryptonight Turtle Light (Variant 2)" :
-//                                                               "Cryptonight Heavy (Variant 2)";
+    res.pow_algorithm =
+        major_version >= network_version_12_checkpointing    ? "Cryptonight Turtle Light (Variant 2)"               :
+        major_version == network_version_11_infinite_staking ? "Cryptonight Turtle Light (Variant 2)" :
+                                                               "Cryptonight Heavy (Variant 2)";
 
     if (res.is_background_mining_enabled)
     {
@@ -2659,6 +2655,9 @@ namespace cryptonote
     entry.last_reward_transaction_index = sn_info.info.last_reward_transaction_index;
     entry.last_uptime_proof             = sn_info.info.proof.timestamp;
     entry.active                        = sn_info.info.is_active();
+    entry.funded                        = sn_info.info.is_fully_funded();
+    entry.state_height                  = sn_info.info.is_fully_funded()
+        ? (sn_info.info.is_decommissioned() ? sn_info.info.last_decommission_height : sn_info.info.active_since_height) : sn_info.info.last_reward_block_height;
     entry.earned_downtime_blocks        = service_nodes::quorum_cop::calculate_decommission_credit(sn_info.info, current_height);
     entry.decommission_count            = sn_info.info.decommission_count;
     entry.service_node_version          = {sn_info.info.proof.version_major, sn_info.info.proof.version_minor, sn_info.info.proof.version_patch};
@@ -2783,6 +2782,7 @@ namespace cryptonote
 
     res.status = CORE_RPC_STATUS_OK;
     res.height = height - 1;
+    res.target_height = m_core.get_target_blockchain_height();
     res.block_hash = string_tools::pod_to_hex(m_core.get_block_id_by_height(res.height));
     res.hardfork = m_core.get_hard_fork_version(res.height);
 

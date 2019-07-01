@@ -2781,7 +2781,9 @@ namespace cryptonote
         uint64_t                  last_reward_block_height;      // The last height at which this Service Node received a reward.
         uint32_t                  last_reward_transaction_index; // When multiple Service Nodes register on the same height, the order the transaction arrive dictate the order you receive rewards.
         uint64_t                  last_uptime_proof;             // The last time this Service Node's uptime proof was relayed by at least 1 Service Node other than itself in unix epoch time.
-        bool                      active;                        // True if fully funded and not currently decommissioned
+        bool                      active;                        // True if fully funded and not currently decommissioned (and so `active && !funded` implicitly defines decommissioned)
+        bool                      funded;                        // True if the required stakes have been submitted to activate this Service Node
+        uint64_t                  state_height;                  // If active: the state at which registration was completed; if decommissioned: the decommissioning height; if awaiting: the last contribution (or registration) height
         uint32_t                  decommission_count;            // The number of times the Service Node has been decommissioned since registration
         int64_t                   earned_downtime_blocks;        // The number of blocks earned towards decommissioning, or the number of blocks remaining until deregistration if currently decommissioned
         std::vector<uint16_t>     service_node_version;          // The major, minor, patch version of the Service Node respectively.
@@ -2803,6 +2805,8 @@ namespace cryptonote
             KV_SERIALIZE(last_reward_transaction_index)
             KV_SERIALIZE(last_uptime_proof)
             KV_SERIALIZE(active)
+            KV_SERIALIZE(funded)
+            KV_SERIALIZE(state_height)
             KV_SERIALIZE(decommission_count)
             KV_SERIALIZE(earned_downtime_blocks)
             KV_SERIALIZE(service_node_version)
@@ -2857,6 +2861,8 @@ namespace cryptonote
       bool last_reward_transaction_index;
       bool last_uptime_proof;
       bool active;
+      bool funded;
+      bool state_height;
       bool decommission_count;
       bool earned_downtime_blocks;
 
@@ -2873,6 +2879,7 @@ namespace cryptonote
 
       bool block_hash;
       bool height;
+      bool target_height;
       bool hardfork;
 
       BEGIN_KV_SERIALIZE_MAP()
@@ -2883,6 +2890,8 @@ namespace cryptonote
       KV_SERIALIZE_OPT2(last_reward_transaction_index, false)
       KV_SERIALIZE_OPT2(last_uptime_proof, false)
       KV_SERIALIZE_OPT2(active, false)
+      KV_SERIALIZE_OPT2(funded, false)
+      KV_SERIALIZE_OPT2(state_height, false)
       KV_SERIALIZE_OPT2(decommission_count, false)
       KV_SERIALIZE_OPT2(earned_downtime_blocks, false)
       KV_SERIALIZE_OPT2(service_node_version, false)
@@ -2897,6 +2906,7 @@ namespace cryptonote
       KV_SERIALIZE_OPT2(storage_port, false)
       KV_SERIALIZE_OPT2(block_hash, false)
       KV_SERIALIZE_OPT2(height, false)
+      KV_SERIALIZE_OPT2(target_height, false)
       KV_SERIALIZE_OPT2(hardfork, false)
       END_KV_SERIALIZE_MAP()
     };
@@ -2934,7 +2944,9 @@ namespace cryptonote
         uint64_t                  last_reward_block_height;      // The last height at which this Service Node received a reward.
         uint32_t                  last_reward_transaction_index; // When multiple Service Nodes register on the same height, the order the transaction arrive dictate the order you receive rewards.
         uint64_t                  last_uptime_proof;             // The last time this Service Node's uptime proof was relayed by atleast 1 Service Node other than itself in unix epoch time.
-        bool                      active;                        // True if fully funded and not currently decommissioned
+        bool                      active;                        // True if fully funded and not currently decommissioned (and so `active && !funded` implicitly defines decommissioned)
+        bool                      funded;                        // True if the required stakes have been submitted to activate this Service Node
+        uint64_t                  state_height;                  // If active: the state at which registration was completed; if decommissioned: the decommissioning height; if awaiting: the last contribution (or registration) height
         uint32_t                  decommission_count;            // The number of times the Service Node has been decommissioned since registration
         int64_t                   earned_downtime_blocks;        // The number of blocks earned towards decommissioning, or the number of blocks remaining until deregistration if currently decommissioned
         std::vector<uint16_t>     service_node_version;          // The major, minor, patch version of the Service Node respectively.
@@ -2956,6 +2968,8 @@ namespace cryptonote
           KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(last_reward_transaction_index);
           KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(last_uptime_proof);
           KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(active);
+          KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(funded);
+          KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(state_height);
           KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(decommission_count);
           KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(earned_downtime_blocks);
           KV_SERIALIZE_ENTRY_FIELD_IF_REQUESTED(service_node_version);
@@ -2975,6 +2989,7 @@ namespace cryptonote
 
       std::vector<entry> service_node_states; // Array of service node registration information
       uint64_t    height;                     // Current block's height.
+      uint64_t    target_height;              // Blockchain's target height.
       std::string block_hash;                 // Current block's hash.
       uint8_t     hardfork;                   // Current hardfork version.
       std::string status;                     // Generic RPC error code. "OK" is the success value.
@@ -2984,6 +2999,9 @@ namespace cryptonote
         KV_SERIALIZE(status)
         if (this_ref.fields.height) {
           KV_SERIALIZE(height)
+        }
+        if (this_ref.fields.target_height) {
+          KV_SERIALIZE(target_height)
         }
         if (this_ref.fields.block_hash) {
           KV_SERIALIZE(block_hash)
