@@ -1405,7 +1405,7 @@ namespace cryptonote
     cryptonote_connection_context fake_context = AUTO_VAL_INIT(fake_context);
     bool relayed = get_protocol()->relay_uptime_proof(req, fake_context);
     if (relayed)
-      MGINFO("Submitted uptime-proof for service node (yours): " << m_service_node_pubkey);
+      MGINFO("Submitted uptime-proof for service node (yours): " << m_service_node_pubkey << " with storage server at " << (epee::net_utils::ipv4_network_address{ m_sn_public_ip, m_storage_port }).str());
 
     return true;
   }
