@@ -184,7 +184,7 @@ namespace cryptonote
   , "The port on which this service node's storage server is accessible. A listening "
     "storage server is required for service nodes. (This option is specified "
     "automatically when using BitToro Launcher.)"
-  , 0};
+  , STORAGE_DEFAULT_PORT};
   static const command_line::arg_descriptor<std::string> arg_block_notify = {
     "block-notify"
   , "Run a program for each new block, '%s' will be replaced by the block hash"
@@ -385,7 +385,7 @@ namespace cryptonote
         return false;
       }
 
-      MGINFO("Storage server endpoint is set to: "
+      MGINFO_YELLOW("Storage server endpoint is set to: "
              << (epee::net_utils::ipv4_network_address{ m_sn_public_ip, m_storage_port }).str());
     }
 
