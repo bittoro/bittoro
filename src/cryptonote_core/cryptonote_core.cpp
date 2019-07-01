@@ -184,7 +184,8 @@ namespace cryptonote
   , "The port on which this service node's storage server is accessible. A listening "
     "storage server is required for service nodes. (This option is specified "
     "automatically when using BitToro Launcher.)"
-  , STORAGE_DEFAULT_PORT};
+  , STORAGE_DEFAULT_PORT
+  };
   static const command_line::arg_descriptor<std::string> arg_block_notify = {
     "block-notify"
   , "Run a program for each new block, '%s' will be replaced by the block hash"
