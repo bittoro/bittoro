@@ -1307,7 +1307,7 @@ bool Blockchain::validate_miner_transaction(const block& b, size_t cumulative_bl
     }
   }
 
-  if (version >= cryptonote::network_version_12_checkpointing)
+  if (version >= cryptonote::network_version_10_bulletproofs) // SEEME
   {
     if (b.miner_tx.type != txtype::standard)
     {
