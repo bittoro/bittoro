@@ -14,12 +14,12 @@ uint64_t get_staking_requirement(cryptonote::network_type m_nettype, uint64_t he
   if (m_nettype == cryptonote::TESTNET || m_nettype == cryptonote::FAKECHAIN)
       return COIN * 100;
 
-  uint64_t hardfork_height = m_nettype == cryptonote::MAINNET ? 5 : 5 /* stagenet */;
+  uint64_t hardfork_height = m_nettype == cryptonote::MAINNET ? 5 : 5 /* stagenet */; // SEEME
   if (height < hardfork_height) height = hardfork_height;
 
   uint64_t height_adjusted = height - hardfork_height;
   uint64_t base = 0, variable = 0;
-  if (hf_version >= cryptonote::network_version_11_infinite_staking)
+  if (hf_version >= cryptonote::network_version_11_infinite_staking) // SEEME
   {
     base     = 9000000 * COIN;
     variable = (25007.0 * COIN) / loki::exp2(height_adjusted/129600.0);

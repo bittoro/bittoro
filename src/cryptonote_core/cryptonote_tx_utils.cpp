@@ -1005,7 +1005,7 @@ namespace cryptonote
     const_cast<int &>(miners) = 0;
 #endif
 
-//    if (hf_version >= network_version_12_checkpointing) {
+//    if (hf_version >= network_version_12_checkpointing) { // SEEME
 //      uint64_t seed_height;
 //      if (rx_needhash(height, &seed_height)) {
 //        crypto::hash hash;

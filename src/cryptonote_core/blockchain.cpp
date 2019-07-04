@@ -96,7 +96,7 @@ struct hard_fork_record
 
 // TODO(doyle): Move this out into a globally accessible object
 // version 7 from the start of the blockchain, inhereted from Monero mainnet
-static const hard_fork_record mainnet_hard_forks[] =
+static const hard_fork_record mainnet_hard_forks[] = // SEEME
 {
   { network_version_7,                   1,		0, 1513046577 },
   { network_version_8,                   101,	0, 1534006000 },
@@ -687,7 +687,7 @@ block Blockchain::pop_block_from_blockchain()
       // that might not be always true. Unlikely though, and always relaying
       // these again might cause a spike of traffic as many nodes re-relay
       // all the transactions in a popped block when a reorg happens.
-      bool r = m_tx_pool.add_tx(tx, tvc, true, true, false, version);
+      bool r = m_tx_pool.add_tx(tx, tvc, true, true, false, version, m_service_node_list);
       if (!r)
       {
         LOG_ERROR("Error returning transaction to tx_pool");
@@ -1820,6 +1820,7 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
     difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, bei);
     CHECK_AND_ASSERT_MES(current_diff, false, "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!");
     crypto::hash proof_of_work = null_hash;
+	get_block_longhash(this, bei.bl, proof_of_work, bei.height, 0); // SEEME
 //    if (b.major_version >= RX_BLOCK_VERSION)
 //    {
 //      crypto::hash seedhash = null_hash;
@@ -1842,7 +1843,7 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
 //      get_altblock_longhash(bei.bl, proof_of_work, get_current_blockchain_height(), bei.height, seedheight, seedhash);
 //    } else
 //    {
-      get_block_longhash(this, bei.bl, proof_of_work, bei.height, 0);
+//      get_block_longhash(this, bei.bl, proof_of_work, bei.height, 0);
 //    }
     if(!check_hash(proof_of_work, current_diff))
     {
@@ -3208,29 +3209,34 @@ bool Blockchain::check_tx_inputs(transaction& tx, tx_verification_context &tvc, 
         return false;
       }
 
-      auto quorum = m_service_node_list.get_testing_quorum(service_nodes::quorum_type::obligations, state_change.block_height);
-      if (!quorum)
+      auto const quorum_type  = service_nodes::quorum_type::obligations;
+      auto const quorum       = m_service_node_list.get_testing_quorum(quorum_type, state_change.block_height);
       {
-        MERROR_VER("State change TX could not get quorum for height: " << state_change.block_height);
-        return false;
+        if (!quorum)
+        {
+          MERROR_VER("could not get obligations quorum for recent state change tx");
+          return false;
+        }
+
+        if (!service_nodes::verify_tx_state_change(state_change, get_current_blockchain_height(), tvc, *quorum, hf_version))
+        {
+          // will be set by the above on serious failures (i.e. illegal value), but not for less
+          // serious ones like state change heights slightly outside of allowed bounds:
+          //tvc.m_verifivation_failed = true;
+          MERROR_VER("tx " << get_transaction_hash(tx) << ": state change tx could not be completely verified reason: " << print_vote_verification_context(tvc.m_vote_ctx));
+          return false;
+        }
       }
 
-      if (!service_nodes::verify_tx_state_change(state_change, get_current_blockchain_height(), tvc, *quorum, hf_version))
-      {
-        // will be set by the above on serious failures (i.e. illegal value), but not for less
-        // serious ones like state change heights slightly outside of allowed bounds:
-        //tvc.m_verifivation_failed = true;
-        MERROR_VER("tx " << get_transaction_hash(tx) << ": state change tx could not be completely verified reason: " << print_vote_verification_context(tvc.m_vote_ctx));
-        return false;
-      }
-
-      const uint64_t height                = state_change.block_height;
-      constexpr size_t num_blocks_to_check = service_nodes::STATE_CHANGE_TX_LIFETIME_IN_BLOCKS;
+      crypto::public_key const &state_change_service_node_pubkey = quorum->workers[state_change.service_node_index];
+      const uint64_t height                                      = state_change.block_height;
+      constexpr size_t num_blocks_to_check                       = service_nodes::STATE_CHANGE_TX_LIFETIME_IN_BLOCKS;
 
       std::vector<std::pair<cryptonote::blobdata,block>> blocks;
       std::vector<cryptonote::blobdata> txs;
       if (!get_blocks(height, num_blocks_to_check, blocks, txs))
       {
+        MERROR_VER("Failed to get historical blocks to check against previous state changes for de-duplication");
         return false;
       }
 
@@ -3253,15 +3259,15 @@ bool Blockchain::check_tx_inputs(transaction& tx, tx_verification_context &tvc, 
           continue;
         }
 
-        const auto existing_quorum = m_service_node_list.get_testing_quorum(service_nodes::quorum_type::obligations, existing_state_change.block_height);
-        if (!existing_quorum)
-        {
-          MERROR_VER("could not get obligations quorum for recent state change tx");
+        crypto::public_key existing_state_change_service_node_pubkey;
+        if (!m_service_node_list.get_quorum_pubkey(quorum_type,
+                                                   service_nodes::quorum_group::worker,
+                                                   existing_state_change.block_height,
+                                                   existing_state_change.service_node_index,
+                                                   existing_state_change_service_node_pubkey))
           continue;
-        }
 
-        if (existing_quorum->workers[existing_state_change.service_node_index] ==
-            quorum->workers[state_change.service_node_index])
+        if (existing_state_change_service_node_pubkey == state_change_service_node_pubkey)
         {
           MERROR_VER("Already seen this state change tx (aka double spend)");
           tvc.m_double_spend = true;
@@ -3625,7 +3631,7 @@ void Blockchain::return_tx_to_pool(std::vector<std::pair<transaction, blobdata>>
     // all the transactions in a popped block when a reorg happens.
     const size_t weight = get_transaction_weight(tx.first, tx.second.size());
     const crypto::hash tx_hash = get_transaction_hash(tx.first);
-    if (!m_tx_pool.add_tx(tx.first, tx_hash, tx.second, weight, tvc, true, true, false, version))
+    if (!m_tx_pool.add_tx(tx.first, tx_hash, tx.second, weight, tvc, true, true, false, version, m_service_node_list))
     {
       MERROR("Failed to return taken transaction with hash: " << get_transaction_hash(tx.first) << " to tx_pool");
     }
