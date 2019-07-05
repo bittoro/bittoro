@@ -210,7 +210,7 @@ namespace cryptonote {
     // that 1MH/s seems more or less right, so we cap it there for the first WINDOW blocks to
     // prevent too-long blocks right after the fork.
     if (v12_initial_override)
-      return std::min(next_difficulty, 1000000 * uint64_t(target_seconds)); // 1M overide
+      return std::min(next_difficulty, 1000000 * uint64_t(target_seconds)); // SEEME 1M overide
 
     return next_difficulty;
   }

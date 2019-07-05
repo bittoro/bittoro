@@ -91,7 +91,7 @@ namespace cryptonote {
       base_reward = 0;
     }
 
-    if (version >= 8) {
+    if (version >= 8) { // SEEME
       base_reward = 30000000000.0 + 1600000000000.0 / loki::exp2(height / (1440.0 * 360.0)); // halved every year. - 1 year
 	} else if (median_weight > 0) {
 	  base_reward = 4000000000000000.0;

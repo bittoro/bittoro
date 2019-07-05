@@ -460,8 +460,8 @@ namespace nodetool
     }
     else
     {
-      full_addrs.insert("212.47.251.15:11044");   // EU
-      full_addrs.insert("45.77.117.59:11044");   // US
+      full_addrs.insert("212.47.251.15:11044");   // BitToro EU
+      full_addrs.insert("45.77.117.59:11044");   // BitToro US
     }
     return full_addrs;
   }
