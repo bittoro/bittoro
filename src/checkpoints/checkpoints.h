@@ -61,6 +61,7 @@ namespace cryptonote
     std::vector<service_nodes::voter_to_signature> signatures; // Only service node checkpoints use signatures
     uint64_t                                       prev_height;
 
+    bool               check         (crypto::hash const &block_hash) const;
     static char const *type_to_string(checkpoint_type type)
     {
       switch(type)
@@ -183,7 +184,7 @@ namespace cryptonote
      *         true if the passed parameters match the stored checkpoint,
      *         false otherwise
      */
-    bool check_block(uint64_t height, const crypto::hash& h, bool *is_a_checkpoint = nullptr) const;
+    bool check_block(uint64_t height, const crypto::hash& h, bool *is_a_checkpoint = nullptr, bool *rejected_by_service_node = nullptr) const;
 
     /**
      * @brief checks if alternate chain blocks should be kept for a given height and updates
@@ -200,7 +201,7 @@ namespace cryptonote
      * @return true if alternate blocks are allowed given the parameters,
      *         otherwise false
      */
-    bool is_alternative_block_allowed(uint64_t blockchain_height, uint64_t block_height);
+    bool is_alternative_block_allowed(uint64_t blockchain_height, uint64_t block_height, bool *rejected_by_service_node = nullptr);
 
     /**
      * @brief gets the highest checkpoint height
@@ -218,6 +219,7 @@ namespace cryptonote
     bool init(network_type nettype, class BlockchainDB *db);
 
   private:
+    network_type m_nettype = UNDEFINED;
     uint64_t m_last_cull_height = 0;
     uint64_t m_oldest_allowable_alternative_block = 0;
     BlockchainDB *m_db;

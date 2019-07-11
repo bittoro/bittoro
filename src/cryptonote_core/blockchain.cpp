@@ -1059,6 +1059,19 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<block_extended_info>
 
   auto split_height = m_db->height();
 
+  // TODO(loki): This is a work around for sometimes reorganising the blockchain causing inconsistent difficulty values
+  LOKI_DEFER
+  {
+    if (nettype() == MAINNET)
+    {
+      uint64_t const FUDGE                             = 60;
+      cryptonote::BlockchainDB::fixup_context context  = {};
+      context.type                                     = cryptonote::BlockchainDB::fixup_type::calculate_difficulty;
+      context.calculate_difficulty_params.start_height = split_height < FUDGE ? 0 : split_height - FUDGE;
+      m_db->fixup(context);
+    }
+  };
+
   for (BlockchainDetachedHook* hook : m_blockchain_detached_hooks)
     hook->blockchain_detached(split_height);
 
@@ -1767,11 +1780,22 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
     bvc.m_verifivation_failed = true;
     return false;
   }
-  if (!m_checkpoints.is_alternative_block_allowed(get_current_blockchain_height(), block_height))
+
   {
-    MERROR_VER("Block with id: " << id << std::endl << " can't be accepted for alternative chain, block height: " << block_height << std::endl << " blockchain height: " << get_current_blockchain_height());
-    bvc.m_verifivation_failed = true;
-    return false;
+    bool rejected_by_service_node = false;
+    if (!m_checkpoints.is_alternative_block_allowed(get_current_blockchain_height(), block_height, &rejected_by_service_node))
+    {
+      if (rejected_by_service_node && nettype() == MAINNET && block_height < HF_VERSION_12_CHECKPOINTING_SOFT_FORK_HEIGHT)
+      {
+        LOG_PRINT_L0("HF12 Checkpointing Pre-Soft Fork: Block with id: " << id << std::endl << " would NOT have been accepted for alternative chain, block height: " << block_height << std::endl << " blockchain height: " << get_current_blockchain_height());
+      }
+      else
+      {
+        MERROR_VER("Block with id: " << id << std::endl << " can't be accepted for alternative chain, block height: " << block_height << std::endl << " blockchain height: " << get_current_blockchain_height());
+        bvc.m_verifivation_failed = true;
+        return false;
+      }
+    }
   }
 
   // this is a cheap test
@@ -1881,19 +1905,39 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
     m_db->add_alt_block(id, data, cryptonote::block_to_blob(bei.bl));
     alt_chain.push_back(bei);
 
-    bool is_a_checkpoint = false;
-    if(!has_checkpoint && !m_checkpoints.check_block(bei.height, id, &is_a_checkpoint))
+    bool rejected_by_service_node = false;
+    bool is_a_checkpoint          = false;
+    if(!has_checkpoint && !m_checkpoints.check_block(bei.height, id, &is_a_checkpoint, &rejected_by_service_node))
     {
-      LOG_ERROR("CHECKPOINT VALIDATION FAILED");
-      bvc.m_verifivation_failed = true;
-      return false;
+      if (rejected_by_service_node && nettype() == MAINNET && block_height < HF_VERSION_12_CHECKPOINTING_SOFT_FORK_HEIGHT)
+      {
+        LOG_PRINT_L0("HF12 Checkpointing Pre-Soft Fork: CHECKPOINT VALIDATION would have FAILED");
+      }
+      else
+      {
+        LOG_ERROR("CHECKPOINT VALIDATION FAILED");
+        bvc.m_verifivation_failed = true;
+        return false;
+      }
     }
 
-    if ((has_checkpoint || is_a_checkpoint) ||
-        (main_chain_cumulative_difficulty < bei.cumulative_difficulty)) // check if difficulty bigger then in main chain
+    bool checkpointed = has_checkpoint || is_a_checkpoint;
+    if (checkpointed || (main_chain_cumulative_difficulty < bei.cumulative_difficulty)) // check if difficulty bigger then in main chain
     {
-      if (has_checkpoint || is_a_checkpoint)
-        MGINFO_GREEN("###### REORGANIZE on height: " << alt_chain.front().height << " of " << m_db->height() - 1 << ", checkpoint is found in alternative chain on height " << bei.height);
+      if (checkpointed)
+      {
+        bool activate_branch = nettype() != MAINNET;
+        if (nettype() == MAINNET && block_height > HF_VERSION_12_CHECKPOINTING_SOFT_FORK_HEIGHT)
+          activate_branch = true;
+
+        if (activate_branch)
+          MGINFO_GREEN("###### REORGANIZE on height: " << alt_chain.front().height << " of " << m_db->height() - 1 << ", checkpoint is found in alternative chain on height " << bei.height);
+        else
+        {
+          MGINFO_GREEN("HF12 Checkpointing Pre-Soft Fork: ###### Would have REORGANIZED on height: " << alt_chain.front().height << " of " << m_db->height() - 1 << ", checkpoint is found in alternative chain on height " << bei.height);
+          return true;
+        }
+      }
       else
         MGINFO_GREEN("###### REORGANIZE on height: " << alt_chain.front().height << " of " << m_db->height() - 1 << " with cum_difficulty " << m_db->get_block_cumulative_difficulty(m_db->height() - 1) << std::endl << " alternative blockchain size: " << alt_chain.size() << " with cum_difficulty " << bei.cumulative_difficulty);
 
@@ -4242,7 +4286,7 @@ bool Blockchain::add_new_block(const block& bl, block_verification_context& bvc,
 // returns false if any of the checkpoints loading returns false.
 // That should happen only if a checkpoint is added that conflicts
 // with an existing checkpoint.
-bool Blockchain::update_checkpoints(const std::string& file_path)
+bool Blockchain::update_checkpoints_from_json_file(const std::string& file_path)
 {
   std::vector<height_to_hash> checkpoint_hashes;
   if (!cryptonote::load_checkpoints_from_json(file_path, checkpoint_hashes))
@@ -4314,6 +4358,20 @@ bool Blockchain::update_checkpoint(cryptonote::checkpoint_t const &checkpoint)
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   bool result = m_checkpoints.update_checkpoint(checkpoint);
+  if (result)
+  {
+    if (checkpoint.height < m_db->height())
+    {
+      if (!checkpoint.check(m_db->get_block_hash_from_height(checkpoint.height)))
+      {
+        // roll back to a couple of blocks before the checkpoint
+        LOG_ERROR("Local blockchain failed to pass a checkpoint in: " << __func__ << ", rolling back!");
+        std::list<block> empty;
+        rollback_blockchain_switching(empty, checkpoint.height - 2);
+      }
+    }
+  }
+
   return result;
 }
 //------------------------------------------------------------------

@@ -155,7 +155,7 @@ namespace cryptonote
   };
   static const command_line::arg_descriptor<std::string> arg_check_updates = {
     "check-updates"
-  , "Check for new versions of bittoro: [disabled|notify|download|update]"
+  , "Check for new versions of bittorod: [disabled|notify|download|update]"
   , "notify"
   };
   static const command_line::arg_descriptor<bool> arg_pad_transactions  = {
@@ -183,7 +183,7 @@ namespace cryptonote
     "storage-server-port"
   , "The port on which this service node's storage server is accessible. A listening "
     "storage server is required for service nodes. (This option is specified "
-    "automatically when using Loki Launcher.)"
+    "automatically when using Bittoro Launcher.)"
   , 0};
   static const command_line::arg_descriptor<std::string> arg_block_notify = {
     "block-notify"
@@ -254,7 +254,7 @@ namespace cryptonote
       m_pprotocol = &m_protocol_stub;
   }
   //-----------------------------------------------------------------------------------------------
-  bool core::update_checkpoints()
+  bool core::update_checkpoints_from_json_file()
   {
     if (m_nettype != MAINNET) return true;
     if (m_checkpoints_updating.test_and_set()) return true;
@@ -263,7 +263,7 @@ namespace cryptonote
     bool res = true;
     if (time(NULL) - m_last_json_checkpoints_update >= 600)
     {
-      res = m_blockchain_storage.update_checkpoints(m_checkpoints_path);
+      res = m_blockchain_storage.update_checkpoints_from_json_file(m_checkpoints_path);
       m_last_json_checkpoints_update = time(NULL);
     }
     m_checkpoints_updating.clear();
@@ -385,7 +385,7 @@ namespace cryptonote
         return false;
       }
 
-      MGINFO_YELLOW("Storage server endpoint is set to: "
+      MGINFO("Storage server endpoint is set to: "
              << (epee::net_utils::ipv4_network_address{ m_sn_public_ip, m_storage_port }).str());
     }
 
@@ -751,7 +751,7 @@ namespace cryptonote
       MERROR("Error --dblock-sync-size cannot be greater than " << BLOCKS_SYNCHRONIZING_MAX_COUNT);
 
     MGINFO("Loading checkpoints");
-    CHECK_AND_ASSERT_MES(update_checkpoints(), false, "One or more checkpoints loaded from json conflicted with existing checkpoints.");
+    CHECK_AND_ASSERT_MES(update_checkpoints_from_json_file(), false, "One or more checkpoints loaded from json conflicted with existing checkpoints.");
 
    // DNS versions checking
     if (check_updates_string == "disabled")
@@ -1601,6 +1601,17 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------
   bool core::add_new_block(const block& b, block_verification_context& bvc, checkpoint_t const *checkpoint)
   {
+    // TODO(loki): Temporary soft-fork code can be removed
+    uint64_t latest_height = std::max(get_current_blockchain_height(), get_target_blockchain_height());
+    if (get_nettype() == cryptonote::MAINNET &&
+        latest_height >= HF_VERSION_12_CHECKPOINTING_SOFT_FORK_HEIGHT &&
+        get_block_height(b) < HF_VERSION_12_CHECKPOINTING_SOFT_FORK_HEIGHT)
+    {
+      // NOTE: After the soft fork, ignore all checkpoints from before the fork so we
+      // only create and enforce checkpoints from after the soft-fork.
+      checkpoint = nullptr;
+    }
+
     bool result = m_blockchain_storage.add_new_block(b, bvc, checkpoint);
     if (result)
     {
@@ -1649,7 +1660,7 @@ namespace cryptonote
     if (((size_t)-1) <= 0xffffffff && block_blob.size() >= 0x3fffffff)
       MWARNING("This block's size is " << block_blob.size() << ", closing on the 32 bit limit");
 
-    CHECK_AND_ASSERT_MES(update_checkpoints(), false, "One or more checkpoints loaded from json conflicted with existing checkpoints.");
+    CHECK_AND_ASSERT_MES(update_checkpoints_from_json_file(), false, "One or more checkpoints loaded from json conflicted with existing checkpoints.");
 
     block lb;
     if (!b)
@@ -2207,8 +2218,6 @@ namespace cryptonote
   bool core::add_service_node_vote(const service_nodes::quorum_vote_t& vote, vote_verification_context &vvc)
   {
     bool result = m_quorum_cop.handle_vote(vote, vvc);
-    if (vvc.m_added_to_pool) // NOTE: Is unique vote
-      m_service_node_list.handle_checkpoint_vote(vote);
     return result;
   }
   //-----------------------------------------------------------------------------------------------
