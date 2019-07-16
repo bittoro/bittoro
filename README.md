@@ -102,7 +102,7 @@ If you already have a repo cloned, initialize and update:
 
 `$ cd bittoro && git submodule init && git submodule update`
 
-If you run Linux service nodes, check systemd example at https://github.com/bittoro/bittoro/config
+If you run Linux service nodes, you should run with multiple screens (https://linuxize.com/post/how-to-use-linux-screen/)
 
 ### Build instructions
 
