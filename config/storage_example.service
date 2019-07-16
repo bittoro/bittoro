@@ -1,0 +1,18 @@
+[Unit]
+Description=BitToro Storage Daemon
+After=network.target
+
+[Service]
+Type=simple
+GuessMainPID=no
+ExecStart=/usr/local/src/bittoro-storage-server/build/httpserver/storage-server 0.0.0.0 18123
+Restart=always
+User=bittorodaemon
+
+[Install]
+WantedBy=multi-user.target
+# add bittorodaemon user and write this file to /lib/systemd/system/bittorostore.service
+# sudo systemctl enable bittorostore
+# sudo systemctl daemon-reload
+# sudo systemctl start bittorostore
+# sudo journalctl -f -u bittorostore 

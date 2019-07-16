@@ -461,7 +461,7 @@ namespace nodetool
     else
     {
       full_addrs.insert("212.47.251.15:11044");   // BitToro EU
-      full_addrs.insert("45.77.117.59:11044");   // BitToro US
+      full_addrs.insert("163.172.135.150:11044");   // BitToro US
     }
     return full_addrs;
   }
@@ -2293,7 +2293,7 @@ namespace nodetool
     if (address.get_zone() != epee::net_utils::zone::public_)
       return false; // Unable to determine how many connections from host
 
-    const size_t max_connections = 2;
+    const size_t max_connections = 1;
     size_t count = 0;
 
     m_network_zones.at(epee::net_utils::zone::public_).m_net_server.get_config_object().foreach_connection([&](const p2p_connection_context& cntxt)

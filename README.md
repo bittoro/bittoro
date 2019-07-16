@@ -1,7 +1,7 @@
 # BitToro
 
 <p align="center">
-    <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://raw.githubusercontent.com/bittoro/bittoro/master/logo/xtor30x36.png" /></a>
+    <a href="https://github.com/bittoro/bittoro/commits/dev"><img alt="pipeline status" src="https://raw.githubusercontent.com/bittoro/bittoro/master/config/xtor30x36.png" /></a>
 </p>
 
 - Copyright (c) 2019 The BitToro Project.
@@ -36,7 +36,7 @@ BitToro is a private cryptocurrency based on Monero, Loki and Triton. BitToro of
 - Stable : payments' option with stable coin to reduce market voltality (based on SAO - Under working)
 - Decentralized Data Apps (DDApps) : secure quick data layer through service nodes
 
-![image](https://github.com/bittoro/bittoro/raw/master/logo/draftfig02.png)
+![image](https://github.com/bittoro/bittoro/raw/master/config/draftfig02.png)
 <p align="center">
 More information on the project can be found on the website and in the whitepaper.
 </p>
@@ -101,6 +101,8 @@ Clone recursively to pull-in needed submodule(s):
 If you already have a repo cloned, initialize and update:
 
 `$ cd bittoro && git submodule init && git submodule update`
+
+If you run Linux service nodes, check systemd example at https://github.com/bittoro/bittoro/config
 
 ### Build instructions
 
