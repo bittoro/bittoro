@@ -3063,7 +3063,7 @@ bool t_rpc_command_executor::prepare_registration()
       case register_step::is_solo_stake__operator_address_to_reserve:
       {
         std::string address_str;
-        last_input_result = input_line_back_cancel_get_input("Enter the loki address for the solo staker", address_str);
+        last_input_result = input_line_back_cancel_get_input("Enter the address for the solo staker", address_str);
         if (last_input_result == input_line_result::back)
           continue;
 
