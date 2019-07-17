@@ -462,6 +462,7 @@ namespace nodetool
     {
       full_addrs.insert("212.47.251.15:11044");   // BitToro EU
       full_addrs.insert("163.172.135.150:11044");   // BitToro US
+      full_addrs.insert("207.180.227.16:11044");   // BitToro Wrkzdev
     }
     return full_addrs;
   }
