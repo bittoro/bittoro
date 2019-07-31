@@ -14,12 +14,8 @@
 ## Development resources
 | Operating System      | Processor | Status |
 | --------------------- | -------- |--------|
-| Ubuntu 16.04          |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
-| Windows (MSYS2/MinGW) |  amd64   | [![Build Status](https://travis-ci.com/bittoro/bittoro.svg?branch=master)](https://travis-ci.com/bittoro/bittoro)
 
 - Web: [bittoro.network](https://bittoro.network)
-- Telegram: [t.me/BitToroCommunity](https://t.me/BitToroCommunity)
-- Mail: [team@bittoro.network](mailto:team@bittoro.network)
 - GitHub: [https://github.com/bittoro/bittoro](https://github.com/bittoro/bittoro)
 - Discord: [https://discord.gg/VTReDjS](https://discord.gg/VTReDjS)
 

@@ -1234,7 +1234,7 @@ namespace cryptonote
       {
         //if we already failed on this height and id, skip actual ring signature check
         if(txd.last_failed_id == m_blockchain.get_block_id_by_height(txd.last_failed_height)) {
-			MERROR("Please report to BitToro devs. Error : tx failed with txd.last_failed_id=" << txd.last_failed_id << ", txd.last_failed_height="<< txd.last_failed_height);
+			LOG_PRINT_L0("For INFO ONLY : tx failed with txd.last_failed_id=" << txd.last_failed_id << ", txd.last_failed_height="<< txd.last_failed_height);
            // FIXME How can it be triggered ?
            return false;
 		}
