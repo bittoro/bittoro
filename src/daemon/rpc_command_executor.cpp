@@ -276,14 +276,15 @@ bool t_rpc_command_executor::print_checkpoints(uint64_t start_height, uint64_t e
   }
 
   std::string entry;
+  if (print_json) entry.append("{\n\"checkpoints\": [");
   for (size_t i = 0; i < res.checkpoints.size(); i++)
   {
-    cryptonote::checkpoint_t &checkpoint = res.checkpoints[i];
+    cryptonote::COMMAND_RPC_GET_CHECKPOINTS::checkpoint_serialized &checkpoint = res.checkpoints[i];
     if (print_json)
     {
-      entry.append("{\n");
-      entry.append(obj_to_json_str(checkpoint));
-      entry.append("\n}\n");
+      entry.append("\n");
+      entry.append(epee::serialization::store_t_to_json(checkpoint));
+      entry.append(",\n");
     }
     else
     {
@@ -292,23 +293,64 @@ bool t_rpc_command_executor::print_checkpoints(uint64_t start_height, uint64_t e
       entry.append("]");
 
       entry.append(" Type: ");
-      entry.append(cryptonote::checkpoint_t::type_to_string(checkpoint.type));
+      entry.append(checkpoint.type);
 
       entry.append(" Height: ");
       entry.append(std::to_string(checkpoint.height));
 
       entry.append(" Hash: ");
-      entry.append(epee::string_tools::pod_to_hex(checkpoint.block_hash));
+      entry.append(checkpoint.block_hash);
       entry.append("\n");
     }
   }
 
-  if (entry.empty())
+  if (print_json)
   {
-    if (print_json) entry.append("{\n}\n");
-    else            entry.append("No Checkpoints");
+    entry.append("]\n}");
   }
+  else
+  {
+    if (entry.empty())
+      entry.append("No Checkpoints");
+  }
+
   tools::success_msg_writer() << entry;
+  return true;
+}
+
+bool t_rpc_command_executor::print_sn_state_changes(uint64_t start_height, uint64_t end_height)
+{
+  cryptonote::COMMAND_RPC_GET_SN_STATE_CHANGES::request  req;
+  cryptonote::COMMAND_RPC_GET_SN_STATE_CHANGES::response res;
+  epee::json_rpc::error error_resp;
+
+  req.start_height = start_height;
+  req.end_height   = end_height;
+
+  if (m_is_rpc)
+  {
+    if (!m_rpc_client->json_rpc_request(req, res, "get_service_nodes_state_changes", "Failed to query service nodes state changes"))
+      return false;
+  }
+  else
+  {
+    if (!m_rpc_server->on_get_service_nodes_state_changes(req, res, error_resp) || res.status != CORE_RPC_STATUS_OK)
+    {
+      tools::fail_msg_writer() << "Failed to query sn state changes";
+      return false;
+    }
+  }
+
+  std::stringstream output;
+
+  output << "Service Node State Changes (blocks " << res.start_height << "-" << res.end_height << ")" << std::endl;
+  output << " Recommissions:\t\t" << res.total_recommission << std::endl;
+  output << " Unlocks:\t\t" << res.total_unlock << std::endl;
+  output << " Decommissions:\t\t" << res.total_decommission << std::endl;
+  output << " Deregistrations:\t" << res.total_deregister << std::endl;
+  output << " IP change penalties:\t" << res.total_ip_change_penalty << std::endl;
+
+  tools::success_msg_writer() << output.str();
   return true;
 }
 
@@ -913,7 +955,16 @@ bool t_rpc_command_executor::print_quorum_state(uint64_t start_height, uint64_t 
     }
   }
 
-  tools::msg_writer() << "{\n" << obj_to_json_str(res.quorums) << "\n}";
+  std::string output;
+  output.append("{\n\"quorums\": [");
+  for (cryptonote::COMMAND_RPC_GET_QUORUM_STATE::quorum_for_height const &quorum : res.quorums)
+  {
+    output.append("\n");
+    output.append(epee::serialization::store_t_to_json(quorum));
+    output.append(",\n");
+  }
+  output.append("]\n}");
+  tools::success_msg_writer() << output;
   return true;
 }
 
@@ -1529,10 +1580,10 @@ bool t_rpc_command_executor::print_status()
   bool daemon_is_alive = m_rpc_client->check_connection();
 
   if(daemon_is_alive) {
-    tools::success_msg_writer() << "lokid is running";
+    tools::success_msg_writer() << "bittorod is running";
   }
   else {
-    tools::fail_msg_writer() << "lokid is NOT running";
+    tools::fail_msg_writer() << "bittorod is NOT running";
   }
 
   return true;
@@ -2498,7 +2549,7 @@ static void append_printable_service_node_list_entry(cryptonote::network_type ne
     buffer.append("\n");
     for (size_t j = 0; j < entry.contributors.size(); ++j)
     {
-      const cryptonote::COMMAND_RPC_GET_SERVICE_NODES::response::contributor &contributor = entry.contributors[j];
+      const cryptonote::service_node_contributor &contributor = entry.contributors[j];
 
       buffer.append(indent2);
       buffer.append("[");
@@ -3063,7 +3114,7 @@ bool t_rpc_command_executor::prepare_registration()
       case register_step::is_solo_stake__operator_address_to_reserve:
       {
         std::string address_str;
-        last_input_result = input_line_back_cancel_get_input("Enter the address for the solo staker", address_str);
+        last_input_result = input_line_back_cancel_get_input("Enter the coin address for the solo staker", address_str);
         if (last_input_result == input_line_result::back)
           continue;
 
@@ -3168,7 +3219,7 @@ bool t_rpc_command_executor::prepare_registration()
       case register_step::is_open_stake__operator_address_to_reserve:
       {
         std::string address_str;
-        last_input_result = input_line_back_cancel_get_input("Enter the loki address for the operator", address_str);
+        last_input_result = input_line_back_cancel_get_input("Enter the coin address for the operator", address_str);
         if (last_input_result == input_line_result::back)
           continue;
 
@@ -3192,7 +3243,7 @@ bool t_rpc_command_executor::prepare_registration()
         std::cout << "Minimum amount that can be reserved: " << cryptonote::print_money(min_contribution) << " " << cryptonote::get_unit() << std::endl;
 
         std::string contribution_str;
-        last_input_result = input_line_back_cancel_get_input("How much loki does the operator want to reserve in the stake?", contribution_str);
+        last_input_result = input_line_back_cancel_get_input("How much coins does the operator want to reserve in the stake?", contribution_str);
         if (last_input_result == input_line_result::back)
           continue;
 
@@ -3243,7 +3294,7 @@ bool t_rpc_command_executor::prepare_registration()
 
       case register_step::is_open_stake__contributor_address_to_reserve:
       {
-        std::string const prompt = "Enter the loki address for contributor " + std::to_string(state.contributions.size() + 1);
+        std::string const prompt = "Enter the coin address for contributor " + std::to_string(state.contributions.size() + 1);
         std::string address_str;
         last_input_result = input_line_back_cancel_get_input(prompt.c_str(), address_str);
         if (last_input_result == input_line_result::back)
@@ -3273,7 +3324,7 @@ bool t_rpc_command_executor::prepare_registration()
         std::cout << "There is " << cryptonote::print_money(amount_left) << " " << cryptonote::get_unit() << " left to meet the staking requirement." << std::endl;
 
         std::string contribution_str;
-        std::string const prompt = "How much loki does contributor " + std::to_string(state.contributions.size() + 1) + " want to reserve in the stake?";
+        std::string const prompt = "How much coins does contributor " + std::to_string(state.contributions.size() + 1) + " want to reserve in the stake?";
         last_input_result        = input_line_back_cancel_get_input(prompt.c_str(), contribution_str);
         if (last_input_result == input_line_result::back)
           continue;

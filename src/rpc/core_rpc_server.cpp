@@ -76,7 +76,6 @@ namespace
 
 namespace cryptonote
 {
-
   //-----------------------------------------------------------------------------------
   void core_rpc_server::init_options(boost::program_options::options_description& desc)
   {
@@ -2443,30 +2442,38 @@ namespace cryptonote
     }
 
     uint64_t start = req.start_height, end = req.end_height;
-    if (req.start_height == COMMAND_RPC_GET_QUORUM_STATE::HEIGHT_SENTINEL_VALUE &&
-        req.end_height == COMMAND_RPC_GET_QUORUM_STATE::HEIGHT_SENTINEL_VALUE)
+    if (start == COMMAND_RPC_GET_QUORUM_STATE::HEIGHT_SENTINEL_VALUE &&
+        end == COMMAND_RPC_GET_QUORUM_STATE::HEIGHT_SENTINEL_VALUE)
     {
       start = m_core.get_blockchain_storage().get_current_blockchain_height() - 1;
+      end   = start + 1;
     }
-    else if (req.start_height == COMMAND_RPC_GET_QUORUM_STATE::HEIGHT_SENTINEL_VALUE)
+    else if (start == COMMAND_RPC_GET_QUORUM_STATE::HEIGHT_SENTINEL_VALUE)
     {
-      // NOTE: In this case, the end height is set, but not the start height, so just treat it as printing the end height
       start = end;
+      end   = end + 1;
     }
-
-    if (start >= end)
+    else if (end == COMMAND_RPC_GET_QUORUM_STATE::HEIGHT_SENTINEL_VALUE)
     {
-      if (end != 0)
-        end = end - 1;
+      end = start + 1;
     }
     else
     {
-      end = end + 1;
+      if (end > start) end++;
+      else
+      {
+        if (end != 0)
+          end--;
+      }
     }
 
+    uint64_t curr_height = m_core.get_blockchain_storage().get_current_blockchain_height();
+    start                = std::min(curr_height, start);
+    end                  = std::min(curr_height, end);
+
+    uint64_t count       = (start > end) ? start - end : end - start;
     if (ctx && m_restricted)
     {
-      uint64_t count = (start < end) ? end - start : start - end;
       if (count > COMMAND_RPC_GET_QUORUM_STATE_MAX_COUNT)
       {
         error_resp.code     = CORE_RPC_ERROR_CODE_WRONG_PARAM;
@@ -2479,7 +2486,7 @@ namespace cryptonote
     }
 
     bool at_least_one_succeeded = false;
-    res.quorums.reserve(std::min((uint64_t)16, end - start));
+    res.quorums.reserve(std::min((uint64_t)16, count));
     for (size_t height = start; height != end;)
     {
       uint8_t hf_version = m_core.get_hard_fork_version(height);
@@ -2497,14 +2504,19 @@ namespace cryptonote
         for (int quorum_int = (int)start_quorum_iterator; quorum_int <= (int)end_quorum_iterator; quorum_int++)
         {
           auto type = static_cast<service_nodes::quorum_type>(quorum_int);
-          if (std::shared_ptr<const service_nodes::testing_quorum> quorum = m_core.get_testing_quorum(type, height))
+          if (std::shared_ptr<const service_nodes::testing_quorum> quorum = m_core.get_testing_quorum(type, height, true /*include_old*/))
           {
             COMMAND_RPC_GET_QUORUM_STATE::quorum_for_height entry = {};
             entry.height                                          = height;
             entry.quorum_type                                     = static_cast<uint8_t>(quorum_int);
-            entry.quorum                                          = *quorum;
-            at_least_one_succeeded                                = true;
+
+            entry.quorum.validators.reserve(quorum->validators.size());
+            entry.quorum.workers.reserve(quorum->workers.size());
+            for (crypto::public_key const &key : quorum->validators) entry.quorum.validators.push_back(epee::string_tools::pod_to_hex(key));
+            for (crypto::public_key const &key : quorum->workers)    entry.quorum.workers.push_back(epee::string_tools::pod_to_hex(key));
+
             res.quorums.push_back(entry);
+            at_least_one_succeeded = true;
           }
         }
       }
@@ -2942,29 +2954,127 @@ namespace cryptonote
     res.status             = CORE_RPC_STATUS_OK;
     BlockchainDB const &db = m_core.get_blockchain_storage().get_db();
 
+    std::vector<checkpoint_t> checkpoints;
     if (req.start_height == COMMAND_RPC_GET_CHECKPOINTS::HEIGHT_SENTINEL_VALUE &&
         req.end_height   == COMMAND_RPC_GET_CHECKPOINTS::HEIGHT_SENTINEL_VALUE)
     {
       checkpoint_t top_checkpoint;
       if (db.get_top_checkpoint(top_checkpoint))
-        res.checkpoints = db.get_checkpoints_range(top_checkpoint.height, 0, req.count);
-      return true;
+        checkpoints = db.get_checkpoints_range(top_checkpoint.height, 0, req.count);
     }
-
-    if (req.start_height == COMMAND_RPC_GET_CHECKPOINTS::HEIGHT_SENTINEL_VALUE)
+    else if (req.start_height == COMMAND_RPC_GET_CHECKPOINTS::HEIGHT_SENTINEL_VALUE)
     {
-      res.checkpoints = db.get_checkpoints_range(req.end_height, 0, req.count);
-      return true;
+      checkpoints = db.get_checkpoints_range(req.end_height, 0, req.count);
     }
-
-    if (req.end_height == COMMAND_RPC_GET_CHECKPOINTS::HEIGHT_SENTINEL_VALUE)
+    else if (req.end_height == COMMAND_RPC_GET_CHECKPOINTS::HEIGHT_SENTINEL_VALUE)
     {
-      res.checkpoints = db.get_checkpoints_range(req.start_height, UINT64_MAX, req.count);
-      return true;
+      checkpoints = db.get_checkpoints_range(req.start_height, UINT64_MAX, req.count);
+    }
+    else
+    {
+      checkpoints = db.get_checkpoints_range(req.start_height, req.end_height);
     }
 
-    res.checkpoints = db.get_checkpoints_range(req.start_height, req.end_height);
+    res.checkpoints.reserve(checkpoints.size());
+    for (checkpoint_t const &checkpoint : checkpoints)
+      res.checkpoints.push_back(checkpoint);
+
     return true;
   }
+  //------------------------------------------------------------------------------------------------------------------------------
+  bool core_rpc_server::on_get_service_nodes_state_changes(const COMMAND_RPC_GET_SN_STATE_CHANGES::request& req, COMMAND_RPC_GET_SN_STATE_CHANGES::response& res, epee::json_rpc::error& error_resp, const connection_context *ctx)
+  {
+    using blob_t = cryptonote::blobdata;
+    using block_pair_t = std::pair<blob_t, block>;
+    std::vector<block_pair_t> blocks;
+
+    const auto& db = m_core.get_blockchain_storage();
+    const uint64_t current_height = db.get_current_blockchain_height();
+
+    uint64_t end_height;
+    if (req.end_height == COMMAND_RPC_GET_SN_STATE_CHANGES::HEIGHT_SENTINEL_VALUE) {
+      // current height is the block being mined, so exclude it from the results
+      end_height = current_height - 1;
+    } else {
+      end_height = req.end_height;
+    }
+
+    if (end_height < req.start_height){
+      error_resp.code = CORE_RPC_ERROR_CODE_WRONG_PARAM;
+      error_resp.message = "The provided end_height needs to be higher than start_height";
+      return false;
+    }
+
+    if (!db.get_blocks(req.start_height, end_height - req.start_height + 1, blocks)) {
+      error_resp.code = CORE_RPC_ERROR_CODE_INTERNAL_ERROR;
+      error_resp.message = "Could not query block at requested height: " + std::to_string(req.start_height);
+      return false;
+    }
+
+    res.start_height = req.start_height;
+    res.end_height = end_height;
+
+    std::vector<blob_t> blobs;
+    std::vector<crypto::hash> missed_ids;
+    for (const auto& block : blocks)
+    {
+      blobs.clear();
+      if (!db.get_transactions_blobs(block.second.tx_hashes, blobs, missed_ids))
+      {
+        MERROR("Could not query block at requested height: " << cryptonote::get_block_height(block.second));
+        continue;
+      }
+      const uint8_t hard_fork_version = block.second.major_version;
+      for (const auto& blob : blobs)
+      {
+        cryptonote::transaction tx;
+        if (!cryptonote::parse_and_validate_tx_from_blob(blob, tx))
+        {
+          MERROR("tx could not be validated from blob, possibly corrupt blockchain");
+          continue;
+        }
+        if (tx.type == cryptonote::txtype::state_change)
+        {
+          cryptonote::tx_extra_service_node_state_change state_change;
+          if (!cryptonote::get_service_node_state_change_from_tx_extra(tx.extra, state_change, hard_fork_version))
+          {
+            LOG_ERROR("Could not get state change from tx, possibly corrupt tx, hf_version "<< std::to_string(hard_fork_version));
+            continue;
+          }
+
+          switch(state_change.state) {
+            case service_nodes::new_state::deregister:
+              res.total_deregister++;
+              break;
+
+            case service_nodes::new_state::decommission:
+              res.total_decommission++;
+              break;
+
+            case service_nodes::new_state::recommission:
+              res.total_recommission++;
+              break;
+
+            case service_nodes::new_state::ip_change_penalty:
+              res.total_ip_change_penalty++;
+              break;
+
+            default:
+              MERROR("Unhandled state in on_get_service_nodes_state_changes");
+              break;
+          }
+        }
+
+        if (tx.type == cryptonote::txtype::key_image_unlock)
+        {
+          res.total_unlock++;
+        }
+      }
+    }
+
+    res.status = CORE_RPC_STATUS_OK;
+    return true;
+  }
+
 
 }  // namespace cryptonote
