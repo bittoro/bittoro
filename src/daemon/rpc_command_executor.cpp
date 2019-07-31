@@ -3038,7 +3038,7 @@ bool t_rpc_command_executor::prepare_registration()
 
   // anything less than DUST will be added to operator stake
   const uint64_t DUST = MAX_NUMBER_OF_CONTRIBUTORS;
-  std::cout << "Current staking requirement: " << cryptonote::print_money(staking_requirement) << " " << cryptonote::get_unit() << std::endl;
+  std::cout << "Current staking requirement: " << cryptonote::print_money(staking_requirement) << " BitToro - " << cryptonote::get_unit() << std::endl;
 
   enum struct register_step
   {
@@ -3240,7 +3240,7 @@ bool t_rpc_command_executor::prepare_registration()
       {
         uint64_t min_contribution_portions = service_nodes::get_min_node_contribution_in_portions(hf_version, staking_requirement, 0, 0);
         const uint64_t min_contribution    = get_amount_to_make_portions(staking_requirement, min_contribution_portions);
-        std::cout << "Minimum amount that can be reserved: " << cryptonote::print_money(min_contribution) << " " << cryptonote::get_unit() << std::endl;
+        std::cout << "Minimum amount that can be reserved: " << cryptonote::print_money(min_contribution) << " BitToro - " << cryptonote::get_unit() << std::endl;
 
         std::string contribution_str;
         last_input_result = input_line_back_cancel_get_input("How much coins does the operator want to reserve in the stake?", contribution_str);
