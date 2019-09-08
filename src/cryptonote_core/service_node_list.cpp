@@ -1479,12 +1479,6 @@ namespace service_nodes
       size_t vout_index = i + 1;
       uint64_t reward = cryptonote::get_portion_of_reward(addresses_and_portions[i].second, total_service_node_reward);
 
-      if (miner_tx.vout[vout_index].amount != reward)
-      {
-        MERROR("Service node reward amount incorrect. Should be " << cryptonote::print_money(reward) << ", is: " << cryptonote::print_money(miner_tx.vout[vout_index].amount));
-        return false;
-      }
-
       if (miner_tx.vout[vout_index].target.type() != typeid(cryptonote::txout_to_key))
       {
         MERROR("Service node output target type should be txout_to_key");
@@ -1505,6 +1499,13 @@ namespace service_nodes
         MERROR("Invalid service node reward output");
         return false;
       }
+
+      if (miner_tx.vout[vout_index].amount != reward)
+      {
+        MERROR("Service node reward amount incorrect. Should be " << cryptonote::print_money(reward) << ", is: " << cryptonote::print_money(miner_tx.vout[vout_index].amount) << ", total_service_node_reward is: " << cryptonote::print_money(total_service_node_reward));
+        return false;
+      }
+
     }
 
     return true;
