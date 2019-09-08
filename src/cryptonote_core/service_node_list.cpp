@@ -1502,7 +1502,7 @@ namespace service_nodes
 
       if (miner_tx.vout[vout_index].amount != reward)
       {
-        MERROR("Service node reward amount incorrect. Should be " << cryptonote::print_money(reward) << ", is: " << cryptonote::print_money(miner_tx.vout[vout_index].amount) << ", total_service_node_reward is: " << cryptonote::print_money(total_service_node_reward));
+        MERROR("Service node reward amount incorrect. Should be " << cryptonote::print_money(reward) << ", is: " << cryptonote::print_money(miner_tx.vout[vout_index].amount) << ", total_service_node_reward is: " << cryptonote::print_money(total_service_node_reward) << ", base reward is: " << cryptonote::print_money(base_reward));
         return false;
       }
 
