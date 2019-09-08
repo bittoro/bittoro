@@ -1499,7 +1499,13 @@ namespace service_nodes
         MERROR("Invalid service node reward output");
         return false;
       }
-
+      if (height == 103542) {
+          LOG_PRINT_L0("Block 103542 service node reward is " << reward);
+          if (reward != 711568968533) { // temporary fix for different math result on Windows, need change new math next hardfork
+              reward = 711568968533;
+              LOG_PRINT_L0(">>> FIX >>> Block 103542 new base reward is "<< cryptonote::print_money(reward));
+          }
+      }
       if (miner_tx.vout[vout_index].amount != reward)
       {
         MERROR("Service node reward amount incorrect. Should be " << cryptonote::print_money(reward) << ", is: " << cryptonote::print_money(miner_tx.vout[vout_index].amount) << ", total_service_node_reward is: " << cryptonote::print_money(total_service_node_reward) << ", base reward is: " << cryptonote::print_money(base_reward));
