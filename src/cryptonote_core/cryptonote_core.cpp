@@ -1664,7 +1664,7 @@ namespace cryptonote
     // quorums are implemented and merged
     if (checkpoint)
     {
-      if (b->major_version >= network_version_13)
+      if (b->major_version >= network_version_13_enforce_checkpoints)
       {
         if (checkpoint->signatures.size() > 1)
         {

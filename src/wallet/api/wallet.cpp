@@ -78,9 +78,9 @@ namespace {
     std::string get_default_ringdb_path(cryptonote::network_type nettype)
     {
       boost::filesystem::path dir = tools::get_default_data_dir();
-      // remove .loki, replace with .shared-ringdb
+      // remove .loki, replace with .xtor-shared-ringdb
       dir = dir.remove_filename();
-      dir /= ".shared-ringdb";
+      dir /= ".xtor-shared-ringdb";
       if (nettype == cryptonote::TESTNET)
         dir /= "testnet";
       else if (nettype == cryptonote::STAGENET)
