@@ -2187,7 +2187,7 @@ namespace service_nodes
 
   bool service_node_info::can_transition_to_state(uint8_t hf_version, uint64_t height, new_state proposed_state) const
   {
-    if (hf_version >= cryptonote::network_version_13 && !can_be_voted_on(height))
+    if (hf_version >= cryptonote::network_version_13_enforce_checkpoints && !can_be_voted_on(height))
       return false;
 
     if (proposed_state == new_state::deregister)
