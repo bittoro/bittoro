@@ -3,6 +3,7 @@
 #include "int-util.h"
 #include <vector>
 #include <boost/lexical_cast.hpp>
+#include <cfenv>
 
 #include "service_node_rules.h"
 
@@ -14,12 +15,22 @@ uint64_t get_staking_requirement(cryptonote::network_type m_nettype, uint64_t he
   if (m_nettype == cryptonote::TESTNET || m_nettype == cryptonote::FAKECHAIN)
       return COIN * 100;
 
-  uint64_t hardfork_height = m_nettype == cryptonote::MAINNET ? 5 : 5 /* stagenet */; // SEEME
+  uint64_t base = 0, variable = 0;
+  if (hf_version >= cryptonote::network_version_13_enforce_checkpoints)
+  {
+    base     = 4500000 * COIN;
+    variable = 0; // no floating
+    uint64_t result = base + variable;
+    return static_cast<uint64_t>(result);
+  }
+
+  uint64_t hardfork_height = m_nettype == cryptonote::MAINNET ?  5 : 5 /* stagenet */; // SEEME
   if (height < hardfork_height) height = hardfork_height;
 
   uint64_t height_adjusted = height - hardfork_height;
-  uint64_t base = 0, variable = 0;
-  if (hf_version >= cryptonote::network_version_11_infinite_staking) // SEEME
+  std::fesetround(FE_TONEAREST);
+  
+  if (hf_version >= cryptonote::network_version_11_infinite_staking)
   {
     base     = 9000000 * COIN;
     variable = (25007.0 * COIN) / loki::exp2(height_adjusted/129600.0);
@@ -90,12 +101,11 @@ uint64_t get_min_node_contribution(uint8_t version, uint64_t staking_requirement
   if (version < cryptonote::network_version_11_infinite_staking)
     return get_min_node_contribution_pre_v11(staking_requirement, total_reserved);
 
-  const uint64_t needed                 = staking_requirement - total_reserved;
-  const size_t max_num_of_contributions = MAX_NUMBER_OF_CONTRIBUTORS * MAX_KEY_IMAGES_PER_CONTRIBUTOR;
-  assert(max_num_of_contributions > num_contributions);
-  if (max_num_of_contributions <= num_contributions) return UINT64_MAX;
+  const uint64_t needed = staking_requirement - total_reserved;
+  assert(MAX_NUMBER_OF_CONTRIBUTORS > num_contributions);
+  if (MAX_NUMBER_OF_CONTRIBUTORS <= num_contributions) return UINT64_MAX;
 
-  const size_t num_contributions_remaining_avail = max_num_of_contributions - num_contributions;
+  const size_t num_contributions_remaining_avail = MAX_NUMBER_OF_CONTRIBUTORS - num_contributions;
   return needed / num_contributions_remaining_avail;
 }
 

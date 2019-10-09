@@ -44,6 +44,7 @@ using namespace epee;
 #include "int-util.h"
 #include "common/dns_utils.h"
 #include "common/loki.h"
+#include <cfenv>
 
 #undef LOKI_DEFAULT_LOG_CATEGORY
 #define LOKI_DEFAULT_LOG_CATEGORY "cn"
@@ -79,25 +80,41 @@ namespace cryptonote {
     return CRYPTONOTE_MAX_TX_SIZE;
   }
   //-----------------------------------------------------------------------------------------------
-  bool get_base_block_reward(size_t median_weight, size_t current_block_weight, uint64_t already_generated_coins, uint64_t &reward, uint8_t version, uint64_t height) {
+  uint64_t block_reward_unpenalized_formula_v7(uint64_t already_generated_coins, uint64_t height, size_t median_weight)
+  {
+    uint64_t emission_supply_component = (already_generated_coins * EMISSION_SUPPLY_MULTIPLIER) / EMISSION_SUPPLY_DIVISOR;
+    uint64_t result = (EMISSION_LINEAR_BASE - emission_supply_component) / EMISSION_DIVISOR;
+
+    // Check if we just overflowed
+    if (emission_supply_component > EMISSION_LINEAR_BASE)
+      result = 0;
+    if (median_weight > 0) {
+	  result = 4000000000000000.0;
+	}
+    return result;
+  }
+
+  uint64_t block_reward_unpenalized_formula_v8(uint64_t height, uint8_t version)
+  {
+    std::fesetround(FE_TONEAREST);
+    uint64_t result = 0;
+    // SEEME
+    if (version >= network_version_13_enforce_checkpoints) { // increase tail emission but reduce current block reward
+        result = 40000000000.0 +  200000000000.0 / loki::exp2(height / (1440.0 * 90.0)); // halve every 90 days.
+        result -= result % 100; // remove 2 last digits at HF V13
+    } else {
+        result = 30000000000.0 + 1600000000000.0 / loki::exp2(height / (1440.0 * 360.0)); // halved every year. - 1 year
+    }
+    return result;
+  }
+
+  bool get_base_block_reward(size_t median_weight, size_t current_block_weight, uint64_t already_generated_coins, uint64_t &reward, uint64_t &reward_unpenalized, uint8_t version, uint64_t height) {
 
     static_assert(DIFFICULTY_TARGET_V2%60==0,"difficulty targets must be a multiple of 60");
 
-    uint64_t emission_supply_component = (already_generated_coins * EMISSION_SUPPLY_MULTIPLIER) / EMISSION_SUPPLY_DIVISOR;
-    uint64_t base_reward = (EMISSION_LINEAR_BASE - emission_supply_component) / EMISSION_DIVISOR;
-
-    // Check if we just overflowed
-    if (emission_supply_component > EMISSION_LINEAR_BASE) {
-      base_reward = 0;
-    }
-
-    if (version >= network_version_8) { // SEEME
-      base_reward = 30000000000.0 + 1600000000000.0 / loki::exp2(height / (1440.0 * 360.0)); // halved every year. - 1 year
-      if (version >= network_version_13_enforce_checkpoints) base_reward -= base_reward % 100; // remove 2 last digits at HF V13
-	} else if (median_weight > 0) {
-	  base_reward = 4000000000000000.0;
-	}
-
+    uint64_t base_reward = version >= network_version_8
+                               ? block_reward_unpenalized_formula_v8(height, version)
+                               : block_reward_unpenalized_formula_v7(already_generated_coins, height, median_weight);
     uint64_t full_reward_zone = get_min_block_weight(version);
 
     //make it soft
@@ -106,7 +123,7 @@ namespace cryptonote {
     }
 
     if (current_block_weight <= median_weight) {
-      reward = base_reward;
+      reward = reward_unpenalized = base_reward;
       return true;
     }
 
@@ -132,6 +149,7 @@ namespace cryptonote {
     assert(0 == reward_hi);
     assert(reward_lo < base_reward);
 
+    reward_unpenalized = base_reward;
     reward = reward_lo;
     return true;
   }

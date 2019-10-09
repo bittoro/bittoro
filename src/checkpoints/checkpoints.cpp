@@ -67,18 +67,34 @@ namespace cryptonote
 //    {10,     "4a7cd8b9bff380d48d6f3533a5e0509f8589cc77d18218b3f7218846e77738fc"},
   };
 
+  height_to_hash const HARDCODED_TESTNET_CHECKPOINTS[] =
+  {
+    {127028, "83f6ea8d62601733a257d2f075fd960edd80886dc090d8751478c0a738caa09e"},
+  };
+
   crypto::hash get_newest_hardcoded_checkpoint(cryptonote::network_type nettype, uint64_t *height)
   {
     crypto::hash result = crypto::null_hash;
     *height = 0;
-    if (nettype != MAINNET)
+    if (nettype != MAINNET && nettype != TESTNET)
       return result;
 
-    uint64_t last_index         = loki::array_count(HARDCODED_MAINNET_CHECKPOINTS) - 1;
-    height_to_hash const &entry = HARDCODED_MAINNET_CHECKPOINTS[last_index];
+    if (nettype == MAINNET)
+    {
+      uint64_t last_index         = loki::array_count(HARDCODED_MAINNET_CHECKPOINTS) - 1;
+      height_to_hash const &entry = HARDCODED_MAINNET_CHECKPOINTS[last_index];
 
-    if (epee::string_tools::hex_to_pod(entry.hash, result))
-      *height = entry.height;
+      if (epee::string_tools::hex_to_pod(entry.hash, result))
+        *height = entry.height;
+    }
+    else
+    {
+      uint64_t last_index         = loki::array_count(HARDCODED_TESTNET_CHECKPOINTS) - 1;
+      height_to_hash const &entry = HARDCODED_TESTNET_CHECKPOINTS[last_index];
+
+      if (epee::string_tools::hex_to_pod(entry.hash, result))
+        *height = entry.height;
+    }
 
     return result;
   }
@@ -160,38 +176,11 @@ namespace cryptonote
     return result;
   }
   //---------------------------------------------------------------------------
-  void checkpoints::block_added(const cryptonote::block& block, const std::vector<cryptonote::transaction>& txs)
+  bool checkpoints::block_added(const cryptonote::block& block, const std::vector<cryptonote::transaction>& txs, checkpoint_t const *checkpoint)
   {
     uint64_t const height = get_block_height(block);
-    if (height < service_nodes::CHECKPOINT_STORE_PERSISTENTLY_INTERVAL ||
-        block.major_version < network_version_12_checkpointing)
-      return;
-
-    if (m_nettype == MAINNET && height == HF_VERSION_12_CHECKPOINTING_SOFT_FORK_HEIGHT)
-    {
-      uint64_t start_height = 0;
-      get_newest_hardcoded_checkpoint(m_nettype, &start_height);
-      start_height += 1; // Don't start deleting from the hardcoded height
-
-      if ((start_height % service_nodes::CHECKPOINT_INTERVAL) > 0)
-        start_height += (service_nodes::CHECKPOINT_INTERVAL - (start_height % service_nodes::CHECKPOINT_INTERVAL));
-
-      for (uint64_t delete_height = start_height;
-           delete_height <= height;
-           delete_height += service_nodes::CHECKPOINT_INTERVAL)
-      {
-        try
-        {
-          m_db->remove_block_checkpoint(delete_height);
-        }
-        catch (const std::exception &e)
-        {
-          MERROR(
-              "Deleting historical checkpoints on mainnet soft-fork to checkpointing failed non-trivially at height: "
-              << delete_height << ", what = " << e.what());
-        }
-      }
-    }
+    if (height < service_nodes::CHECKPOINT_STORE_PERSISTENTLY_INTERVAL || block.major_version < network_version_12_checkpointing)
+      return true;
 
     uint64_t end_cull_height = 0;
     {
@@ -222,6 +211,11 @@ namespace cryptonote
         MERROR("Pruning block checkpoint on block added failed non-trivially at height: " << m_last_cull_height << ", what = " << e.what());
       }
     }
+
+    if (checkpoint)
+        update_checkpoint(*checkpoint);
+
+    return true;
   }
   //---------------------------------------------------------------------------
   void checkpoints::blockchain_detached(uint64_t height)
@@ -259,26 +253,27 @@ namespace cryptonote
     return height <= top_checkpoint_height;
   }
   //---------------------------------------------------------------------------
-  bool checkpoints::check_block(uint64_t height, const crypto::hash& h, bool* is_a_checkpoint, bool *rejected_by_service_node) const
+  bool checkpoints::check_block(uint64_t height, const crypto::hash& h, bool* is_a_checkpoint, bool *service_node_checkpoint) const
   {
     checkpoint_t checkpoint;
     bool found = get_checkpoint(height, checkpoint);
     if (is_a_checkpoint) *is_a_checkpoint = found;
+    if (service_node_checkpoint) *service_node_checkpoint = false;
 
     if(!found)
       return true;
 
     bool result = checkpoint.check(h);
-    if (rejected_by_service_node)
-      *rejected_by_service_node = checkpoint.type == checkpoint_type::service_node && result;
+    if (service_node_checkpoint)
+      *service_node_checkpoint = (checkpoint.type == checkpoint_type::service_node);
 
     return result;
   }
   //---------------------------------------------------------------------------
-  bool checkpoints::is_alternative_block_allowed(uint64_t blockchain_height, uint64_t block_height, bool *rejected_by_service_node)
+  bool checkpoints::is_alternative_block_allowed(uint64_t blockchain_height, uint64_t block_height, bool *service_node_checkpoint)
   {
-    if (rejected_by_service_node)
-      *rejected_by_service_node = false;
+    if (service_node_checkpoint)
+      *service_node_checkpoint = false;
 
     if (0 == block_height)
       return false;
@@ -294,12 +289,12 @@ namespace cryptonote
     if (m_db->get_immutable_checkpoint(&immutable_checkpoint, blockchain_height))
     {
       immutable_height = immutable_checkpoint.height;
-      if (rejected_by_service_node)
-        *rejected_by_service_node = (immutable_checkpoint.type == checkpoint_type::service_node);
+      if (service_node_checkpoint)
+        *service_node_checkpoint = (immutable_checkpoint.type == checkpoint_type::service_node);
     }
 
-    m_oldest_allowable_alternative_block = std::max(immutable_height, m_oldest_allowable_alternative_block);
-    bool result                          = block_height > m_oldest_allowable_alternative_block;
+    m_immutable_height = std::max(immutable_height, m_immutable_height);
+    bool result        = block_height > m_immutable_height;
     return result;
   }
   //---------------------------------------------------------------------------
@@ -325,6 +320,14 @@ namespace cryptonote
       for (size_t i = 0; i < loki::array_count(HARDCODED_MAINNET_CHECKPOINTS); ++i)
       {
         height_to_hash const &checkpoint = HARDCODED_MAINNET_CHECKPOINTS[i];
+        ADD_CHECKPOINT(checkpoint.height, checkpoint.hash);
+      }
+    }
+    else if (nettype == TESTNET)
+    {
+      for (size_t i = 0; i < loki::array_count(HARDCODED_TESTNET_CHECKPOINTS); ++i)
+      {
+        height_to_hash const &checkpoint = HARDCODED_TESTNET_CHECKPOINTS[i];
         ADD_CHECKPOINT(checkpoint.height, checkpoint.hash);
       }
     }
