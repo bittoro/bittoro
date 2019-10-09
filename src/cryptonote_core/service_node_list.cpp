@@ -1448,6 +1448,11 @@ namespace service_nodes
     return std::get<2>(oldest_waiting);
   }
 
+  template <typename T>
+  static constexpr bool within_one(T a, T b) {
+      return (a > b ? a - b : b - a) <= T{1};
+  }
+
   bool service_node_list::validate_miner_tx(const crypto::hash& prev_id, const cryptonote::transaction& miner_tx, uint64_t height, int hard_fork_version, cryptonote::block_reward_parts const &reward_parts) const
   {
     std::lock_guard<boost::recursive_mutex> lock(m_sn_mutex);
@@ -1499,14 +1504,12 @@ namespace service_nodes
         MERROR("Invalid service node reward output");
         return false;
       }
-      if (height == 103542) {
-          LOG_PRINT_L0("Block 103542 service node reward is " << reward);
-          if (reward != 711568968533) { // temporary fix for different math result on Windows, need change new math next hardfork
-              reward = 711568968533;
-              LOG_PRINT_L0(">>> FIX >>> Block 103542 new base reward is "<< cryptonote::print_money(reward));
-          }
-      }
-      if (miner_tx.vout[vout_index].amount != reward)
+
+      // Because FP math is involved in reward calculations (and compounded by CPUs, compilers,
+      // expression contraction, and RandomX fiddling with the rounding modes) we can end up with a
+      // 1 ULP difference in the reward calculations.
+      // TODO(loki): eliminate all FP math from reward calculations
+      if (!within_one(miner_tx.vout[vout_index].amount, reward))
       {
         MERROR("Service node reward amount incorrect. Should be " << cryptonote::print_money(reward) << ", is: " << cryptonote::print_money(miner_tx.vout[vout_index].amount) << ", total_service_node_reward is: " << cryptonote::print_money(total_service_node_reward) << ", base reward is: " << cryptonote::print_money(base_reward));
         return false;
@@ -2187,7 +2190,7 @@ namespace service_nodes
 
   bool service_node_info::can_transition_to_state(uint8_t hf_version, uint64_t height, new_state proposed_state) const
   {
-    if (hf_version >= cryptonote::network_version_13 && !can_be_voted_on(height))
+    if (hf_version >= cryptonote::network_version_13_enforce_checkpoints && !can_be_voted_on(height))
       return false;
 
     if (proposed_state == new_state::deregister)

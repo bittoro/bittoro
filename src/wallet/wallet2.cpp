@@ -149,7 +149,7 @@ namespace
     boost::filesystem::path dir = tools::get_default_data_dir();
     // remove .loki, replace with .shared-ringdb
     dir = dir.remove_filename();
-    dir /= ".shared-ringdb";
+    dir /= ".xtor-shared-ringdb";
     return dir.string();
   }
 

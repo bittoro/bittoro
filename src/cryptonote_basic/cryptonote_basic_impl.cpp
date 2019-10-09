@@ -91,8 +91,9 @@ namespace cryptonote {
       base_reward = 0;
     }
 
-    if (version >= 8) { // SEEME
+    if (version >= network_version_8) { // SEEME
       base_reward = 30000000000.0 + 1600000000000.0 / loki::exp2(height / (1440.0 * 360.0)); // halved every year. - 1 year
+      if (version >= network_version_13_enforce_checkpoints) base_reward -= base_reward % 100; // remove 2 last digits at HF V13
 	} else if (median_weight > 0) {
 	  base_reward = 4000000000000000.0;
 	}
