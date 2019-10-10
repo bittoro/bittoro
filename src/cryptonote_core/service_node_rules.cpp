@@ -18,7 +18,7 @@ uint64_t get_staking_requirement(cryptonote::network_type m_nettype, uint64_t he
   uint64_t base = 0, variable = 0;
   if (hf_version >= cryptonote::network_version_13_enforce_checkpoints)
   {
-    base     = 4500000 * COIN;
+    base     = 950000 * COIN;
     variable = 0; // no floating
     uint64_t result = base + variable;
     return static_cast<uint64_t>(result);
