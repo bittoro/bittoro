@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2019, The Monero Project
-// Copyright (c)      2018, The BitToro Project
+// Copyright (c)      2018, The Loki Project
 // 
 // All rights reserved.
 // 
@@ -5947,45 +5947,22 @@ void wallet2::get_transfers(get_transfers_args_t args, std::vector<transfer_view
 
   // Fill transfers
   transfers.reserve(size);
-  if (args.in)
+  for (const auto &i : in)
+    transfers.push_back(make_transfer_view(i.second.m_tx_hash, i.first, i.second));
+  for (const auto &o : out)
+    transfers.push_back(make_transfer_view(o.first, o.second));
+  for (const auto &pof : pending_or_failed)
   {
-    for (auto i = in.cbegin(); i != in.cend(); ++i)
-    {
-      transfers.push_back(make_transfer_view(i->second.m_tx_hash, i->first, i->second));
-    }
+    bool is_failed = pof.second.m_state == tools::wallet2::unconfirmed_transfer_details::failed;
+    if (is_failed ? args.failed : args.pending)
+      transfers.push_back(make_transfer_view(pof.first, pof.second));
   }
-
-  if (args.out)
-  {
-    for (std::list<std::pair<crypto::hash, tools::wallet2::confirmed_transfer_details>>::const_iterator i = out.begin(); i != out.end(); ++i)
-    {
-      transfers.push_back(make_transfer_view(i->first, i->second));
-    }
-  }
-
-  if (args.pending || args.failed)
-  {
-    for (std::list<std::pair<crypto::hash, tools::wallet2::unconfirmed_transfer_details>>::const_iterator i = pending_or_failed.begin(); i != pending_or_failed.end(); ++i)
-    {
-      const wallet2::unconfirmed_transfer_details &pd = i->second;
-      bool is_failed = pd.m_state == tools::wallet2::unconfirmed_transfer_details::failed;
-      if (!((args.failed && is_failed) || (!is_failed && args.pending)))
-        continue;
-      transfers.push_back(make_transfer_view(i->first, i->second));
-    }
-  }
-
-  if (args.pool)
-  {
-    for (std::list<std::pair<crypto::hash, tools::wallet2::pool_payment_details>>::const_iterator i = pool.begin(); i != pool.end(); ++i)
-    {
-      transfers.push_back(make_transfer_view(i->first, i->second));
-    }
-  }
+  for (const auto &p : pool)
+    transfers.push_back(make_transfer_view(p.first, p.second));
 
   std::sort(transfers.begin(), transfers.end(), [](const transfer_view& a, const transfer_view& b) -> bool {
-    if (a.confirmed && !b.confirmed)
-      return true;
+    if (a.confirmed != b.confirmed)
+      return a.confirmed;
     if (a.height != b.height)
       return a.height < b.height;
     if (a.timestamp != b.timestamp)
@@ -12257,7 +12234,7 @@ std::string wallet2::get_tx_note(const crypto::hash &txid) const
 {
   std::unordered_map<crypto::hash, std::string>::const_iterator i = m_tx_notes.find(txid);
   if (i == m_tx_notes.end())
-    return std::string();
+    return  ::string();
   return i->second;
 }
 

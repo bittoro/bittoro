@@ -62,7 +62,7 @@ static uint8_t get_block_version(const cryptonote::block &b)
 // a class.
 
 // version 7 from the start of the blockchain, inhereted from Monero mainnet
-static const HardFork::Params mainnet_hard_forks[] = // SEEME
+static constexpr HardFork::Params mainnet_hard_forks[] = // SEEME
 {
   { network_version_7,                   1,		0, 1513046577 },
   { network_version_8,                   101,	0, 1534006000 },
@@ -73,7 +73,7 @@ static const HardFork::Params mainnet_hard_forks[] = // SEEME
   { network_version_13_enforce_checkpoints, 178208, 0, 1565546000 }, // 2019-10-28 19:00AEDT
 };
 
-static const HardFork::Params testnet_hard_forks[] =
+static constexpr HardFork::Params testnet_hard_forks[] =
 {
   { network_version_7,                   1,     0, 1533631121 },
   { network_version_8,                   2,     0, 1533631122 },
@@ -84,7 +84,7 @@ static const HardFork::Params testnet_hard_forks[] =
   { network_version_13_enforce_checkpoints, 127028, 0, 1568440800 }, // 2019-09-13 16:00AEDT
 };
 
-static const HardFork::Params stagenet_hard_forks[] =
+static constexpr HardFork::Params stagenet_hard_forks[] =
 {
   { network_version_7,                   1,      0, 1341378000 },
   { network_version_8,                   64324,  0, 1533006000 },
