@@ -1414,7 +1414,7 @@ namespace nodetool
         if (skipped == 0 || !filtered.empty())
           break;
         if (skipped)
-          MGINFO("Skipping " << skipped << " possible peers as they share a class B with existing peers");
+          MDEBUG("Skipping " << skipped << " possible peers as they share a class B with existing peers");
       }
       if (filtered.empty())
       {
