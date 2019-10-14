@@ -1810,30 +1810,30 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
     difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, block_height);
     CHECK_AND_ASSERT_MES(current_diff, false, "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!");
     crypto::hash proof_of_work = null_hash;
-    if (false) // SEEME randomX unused
-    {
-      crypto::hash seedhash = null_hash;
-      uint64_t seedheight = rx_seedheight(block_height);
+//    if (false) // SEEME randomX unused
+//    {
+//      crypto::hash seedhash = null_hash;
+//      uint64_t seedheight = rx_seedheight(block_height);
       // seedblock is on the alt chain somewhere
-      if (alt_chain.size() && alt_chain.front().height <= seedheight)
-      {
-        for (auto it=alt_chain.begin(); it != alt_chain.end(); it++)
-        {
-          if (it->height == seedheight+1)
-          {
-            seedhash = it->bl.prev_id;
-            break;
-          }
-        }
-      } else
-      {
-        seedhash = get_block_id_by_height(seedheight);
-      }
-      get_altblock_longhash(b, proof_of_work, curr_blockchain_height, block_height, seedheight, seedhash);
-    } else
-    {
+//      if (alt_chain.size() && alt_chain.front().height <= seedheight)
+//      {
+//        for (auto it=alt_chain.begin(); it != alt_chain.end(); it++)
+//        {
+//          if (it->height == seedheight+1)
+//          {
+//            seedhash = it->bl.prev_id;
+//            break;
+//          }
+//        }
+//      } else
+//      {
+//        seedhash = get_block_id_by_height(seedheight);
+//      }
+//      get_altblock_longhash(b, proof_of_work, curr_blockchain_height, block_height, seedheight, seedhash);
+//    } else
+//    {
       get_block_longhash(this, b, proof_of_work, block_height, 0);
-    }
+//    }
     if(!check_hash(proof_of_work, current_diff))
     {
       MERROR_VER("Block with id: " << id << std::endl << " for alternative chain, does not have enough proof of work: " << proof_of_work << std::endl << " expected difficulty: " << current_diff);
