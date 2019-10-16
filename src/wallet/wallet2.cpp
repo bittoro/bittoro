@@ -12234,7 +12234,7 @@ std::string wallet2::get_tx_note(const crypto::hash &txid) const
 {
   std::unordered_map<crypto::hash, std::string>::const_iterator i = m_tx_notes.find(txid);
   if (i == m_tx_notes.end())
-    return  ::string();
+    return  std::string();
   return i->second;
 }
 
