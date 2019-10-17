@@ -529,7 +529,7 @@ bool loki_core_block_reward_unpenalized::generate(std::vector<test_event_entry>&
     txs[i] = gen.create_and_add_tx(gen.first_miner_, dummy, MK_COINS(5));
 
   gen.create_and_add_next_block(txs);
-  uint64_t unpenalized_block_reward     = cryptonote::block_reward_unpenalized_formula_v8(gen.height());
+  uint64_t unpenalized_block_reward     = cryptonote::block_reward_unpenalized_formula_v8(gen.height(), newest_hf);
   uint64_t expected_service_node_reward = cryptonote::service_node_reward_formula(unpenalized_block_reward, newest_hf);
 
   loki_register_callback(events, "check_block_rewards", [&events, unpenalized_block_reward, expected_service_node_reward](cryptonote::core &c, size_t ev_index)
