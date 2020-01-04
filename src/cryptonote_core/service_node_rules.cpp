@@ -29,7 +29,7 @@ uint64_t get_staking_requirement(cryptonote::network_type m_nettype, uint64_t he
 
   uint64_t height_adjusted = height - hardfork_height;
   std::fesetround(FE_TONEAREST);
-  
+
   if (hf_version >= cryptonote::network_version_11_infinite_staking)
   {
     base     = 9000000 * COIN;
@@ -161,15 +161,6 @@ bool get_portions_from_percent_str(std::string cut_str, uint64_t& portions) {
   }
 
   return get_portions_from_percent(cut_percent, portions);
-}
-
-uint64_t uniform_distribution_portable(std::mt19937_64& mersenne_twister, uint64_t n)
-{
-  assert(n > 0);
-  uint64_t secureMax = mersenne_twister.max() - mersenne_twister.max() % n;
-  uint64_t x;
-  do x = mersenne_twister(); while (x >= secureMax);
-  return  x / (secureMax / n);
 }
 
 } // namespace service_nodes

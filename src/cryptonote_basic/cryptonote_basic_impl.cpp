@@ -80,7 +80,7 @@ namespace cryptonote {
     return CRYPTONOTE_MAX_TX_SIZE;
   }
   //-----------------------------------------------------------------------------------------------
-  uint64_t block_reward_unpenalized_formula_v7(uint64_t already_generated_coins, uint64_t height, size_t median_weight)
+  uint64_t block_reward_unpenalized_formula_v7(uint64_t already_generated_coins, uint64_t height)
   {
     uint64_t emission_supply_component = (already_generated_coins * EMISSION_SUPPLY_MULTIPLIER) / EMISSION_SUPPLY_DIVISOR;
     uint64_t result = (EMISSION_LINEAR_BASE - emission_supply_component) / EMISSION_DIVISOR;
@@ -88,23 +88,15 @@ namespace cryptonote {
     // Check if we just overflowed
     if (emission_supply_component > EMISSION_LINEAR_BASE)
       result = 0;
-    if (median_weight > 0) {
-	  result = 4000000000000000.0;
-	}
     return result;
   }
 
-  uint64_t block_reward_unpenalized_formula_v8(uint64_t height, uint8_t version)
+  uint64_t block_reward_unpenalized_formula_v8(uint64_t height)
   {
     std::fesetround(FE_TONEAREST);
     uint64_t result = 0;
     // SEEME
-    if (version >= network_version_13_enforce_checkpoints) { // increase tail emission but reduce current block reward
-        result = 40000000000.0 +  200000000000.0 / loki::exp2(height / (1440.0 * 90.0)); // halve every 90 days.
-        result -= result % 100; // remove 2 last digits at HF V13
-    } else {
         result = 30000000000.0 + 1600000000000.0 / loki::exp2(height / (1440.0 * 360.0)); // halved every year. - 1 year
-    }
     return result;
   }
 
@@ -113,8 +105,16 @@ namespace cryptonote {
     static_assert(DIFFICULTY_TARGET_V2%60==0,"difficulty targets must be a multiple of 60");
 
     uint64_t base_reward = version >= network_version_8
-                               ? block_reward_unpenalized_formula_v8(height, version)
-                               : block_reward_unpenalized_formula_v7(already_generated_coins, height, median_weight);
+                               ? block_reward_unpenalized_formula_v8(height)
+                               : block_reward_unpenalized_formula_v7(already_generated_coins, height);
+    if (version < 8 && median_weight > 0) { // SEEME block_reward_unpenalized_formula_v7
+	  base_reward = 4000000000000000.0;
+	}
+    // SEEME
+    if (version >= network_version_13_enforce_checkpoints) { // block_reward_unpenalized_formula_v13 increase tail emission but reduce current block reward
+        base_reward = 40000000000.0 +  200000000000.0 / loki::exp2(height / (1440.0 * 90.0)); // halve every 90 days.
+        base_reward -= base_reward % 100; // remove 2 last digits at HF V13
+    }
     uint64_t full_reward_zone = get_min_block_weight(version);
 
     //make it soft

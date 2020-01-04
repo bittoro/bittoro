@@ -60,11 +60,19 @@ static_assert(STAKING_PORTIONS % 3 == 0, "Use a multiple of three, so that it di
 
 #define BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW               11
 
+// For local testnet debug purposes allow shrinking the uptime proof frequency
+#ifndef UPTIME_PROOF_BASE_MINUTE
+#define UPTIME_PROOF_BASE_MINUTE                        60
+#endif
+
 #define UPTIME_PROOF_BUFFER_IN_SECONDS                  (5*60) // The acceptable window of time to accept a peer's uptime proof from its reported timestamp
-#define UPTIME_PROOF_FREQUENCY_IN_SECONDS               (60*60)
-#define UPTIME_PROOF_MAX_TIME_IN_SECONDS                (UPTIME_PROOF_FREQUENCY_IN_SECONDS * 2 + UPTIME_PROOF_BUFFER_IN_SECONDS)
+#define UPTIME_PROOF_INITIAL_DELAY_SECONDS              (2*UPTIME_PROOF_BASE_MINUTE) // Delay after startup before sending a proof (to allow connections to be established)
+#define UPTIME_PROOF_TIMER_SECONDS                      (5*UPTIME_PROOF_BASE_MINUTE) // How often we check whether we need to send an uptime proof
+#define UPTIME_PROOF_FREQUENCY_IN_SECONDS               (60*UPTIME_PROOF_BASE_MINUTE) // How often we resend uptime proofs normally (i.e. after we've seen an uptime proof reply from the network)
+#define UPTIME_PROOF_MAX_TIME_IN_SECONDS                (UPTIME_PROOF_FREQUENCY_IN_SECONDS * 2 + UPTIME_PROOF_BUFFER_IN_SECONDS) // How long until proofs of other network service nodes are considered expired
 
 #define STORAGE_SERVER_PING_LIFETIME                    UPTIME_PROOF_FREQUENCY_IN_SECONDS
+#define LOKINET_PING_LIFETIME                           UPTIME_PROOF_FREQUENCY_IN_SECONDS
 
 // MONEY_SUPPLY - total number coins to be generated
 #define MONEY_SUPPLY                                    ((uint64_t)(-1))
@@ -91,6 +99,16 @@ static_assert(STAKING_PORTIONS % 3 == 0, "Use a multiple of three, so that it di
 #define DYNAMIC_FEE_PER_KB_BASE_FEE_V5                  ((uint64_t)400000000)
 #define DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT        ((uint64_t)3000)
 #define DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT_V12    ((uint64_t)240000) // Only v12 (v13 switches back)
+
+// Blink fees: in total the sender must pay (MINER_TX_FEE_PERCENT + BURN_TX_FEE_PERCENT) * [minimum tx fee] + BLINK_BURN_FIXED,
+// and the miner including the tx includes MINER_TX_FEE_PERCENT * [minimum tx fee]; the rest must be left unclaimed.
+#define BLINK_MINER_TX_FEE_PERCENT                      100 // The blink miner tx fee (as a percentage of the minimum tx fee)
+#define BLINK_BURN_FIXED                                0   // A fixed amount (in atomic currency units) that the sender must burn
+#define BLINK_BURN_TX_FEE_PERCENT                       400 // A percentage of the minimum miner tx fee that the sender must burn.  (Adds to BLINK_BURN_FIXED)
+
+static_assert(BLINK_MINER_TX_FEE_PERCENT >= 100, "blink miner fee cannot be smaller than the base tx fee");
+static_assert(BLINK_BURN_FIXED >= 0, "fixed blink burn amount cannot be negative");
+static_assert(BLINK_BURN_TX_FEE_PERCENT >= 0, "blink burn tx percent cannot be negative");
 
 #define DIFFICULTY_TARGET_V2                            60  // seconds
 #define DIFFICULTY_WINDOW_V2                            60
@@ -162,6 +180,8 @@ static_assert(STAKING_PORTIONS % 3 == 0, "Use a multiple of three, so that it di
 #define HF_VERSION_INCREASE_FEE                 cryptonote::network_version_12_checkpointing
 #define HF_VERSION_PER_OUTPUT_FEE               cryptonote::network_version_13_enforce_checkpoints
 #define HF_VERSION_ED25519_KEY                  cryptonote::network_version_13_enforce_checkpoints
+#define HF_VERSION_FEE_BURNING                  cryptonote::network_version_14_blink_lns
+#define HF_VERSION_BLINK                        cryptonote::network_version_14_blink_lns
 
 #define PER_KB_FEE_QUANTIZATION_DECIMALS        8
 
@@ -191,6 +211,7 @@ namespace config
   uint16_t const P2P_DEFAULT_PORT = 11044;
   uint16_t const RPC_DEFAULT_PORT = 11045;
   uint16_t const ZMQ_RPC_DEFAULT_PORT = 11046;
+  uint16_t const QNET_DEFAULT_PORT = 11047;
   boost::uuids::uuid const NETWORK_ID = { {
         0x49 ,0x62, 0x75, 0x62 ,0x61, 0x75, 0x74, 0x69, 0x2a, 0x4c, 0x61, 0x75, 0x66, 0x65, 0x79
     } }; // Bender's nightmare
@@ -212,17 +233,18 @@ namespace config
     uint16_t const P2P_DEFAULT_PORT = 38156;
     uint16_t const RPC_DEFAULT_PORT = 38157;
     uint16_t const ZMQ_RPC_DEFAULT_PORT = 38158;
+    uint16_t const QNET_DEFAULT_PORT = 38159;
     boost::uuids::uuid const NETWORK_ID = { {
         0x5f, 0x3a, 0x78, 0x65, 0xe1, 0x6f, 0xca, 0xb8, 0x02, 0xa1, 0xdc, 0x17, 0x61, 0x64, 0x15, 0xbe,
       } }; // Bender's daydream
-    std::string const GENESIS_TX = "021e01ff000380808d93f5d771027c4fd4553bc9886f1f49e3f76d945bf71e8632a94e6c177b19cbc780e7e6bdb48080b4ccd4dfc60302c8b9f6461f58ef3f2107e577c7425d06af584a1c7482bf19060e84059c98b4c3808088fccdbcc32302732b53b0b0db706fcc3087074fb4b786da5ab72b2065699f9453448b0db27f892101ed71f2ce3fc70d7b2036f8a4e4b3fb75c66c12184b55a908e7d1a1d6995566cf00";
+    std::string const GENESIS_TX = "03011e001e01ff00018080c9db97f4fb270259b546996f69aa71abe4238995f41d780ab1abebcac9f00e808f147bdb9e3228420112573af8c309b69a1a646f41b5212ba7d9c4590bf86e04f36c486467cfef9d3d72000000000000000000000000000000000000000000000000000000000000000000";
     uint32_t const GENESIS_NONCE = 10001;
 
     uint64_t const GOVERNANCE_REWARD_INTERVAL_IN_BLOCKS = 1000;
     std::string const GOVERNANCE_WALLET_ADDRESS[] =
     {
-      "bittXbMBtbUMNEPTw2EjtSPVcoAoqqZw576qMEFs1dTWUcLn7KeD6eFht95qmknM8FTUWUwJMF6zwEQPA5UC47uG7JGYd19rtG", // hardfork v7-9
-      "bittXbMBtbUMNEPTw2EjtSPVcoAoqqZw576qMEFs1dTWUcLn7KeD6eFht95qmknM8FTUWUwJMF6zwEQPA5UC47uG7JGYd19rtG", // hardfork v10
+      "T6SUprTYE5rQpep9iQFxyPcKVd91DFR1fQ1Qsyqp5eYLiFc8XuYd3reRE71qDL8c3DXioUbDEpDFdaUpetnL37NS1R3rzoKxi", // hardfork v7-9
+      "T6TzkJb5EiASaCkcH7idBEi1HSrpSQJE1Zq3aL65ojBMPZvqHNYPTL56i3dncGVNEYCG5QG5zrBmRiVwcg6b1cRM1SRNqbp44", // hardfork v10
     };
 
   }
@@ -232,20 +254,21 @@ namespace config
     uint64_t const CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX = 24;
     uint64_t const CRYPTONOTE_PUBLIC_INTEGRATED_ADDRESS_BASE58_PREFIX = 25;
     uint64_t const CRYPTONOTE_PUBLIC_SUBADDRESS_BASE58_PREFIX = 36;
-    uint16_t const P2P_DEFAULT_PORT = 38153;
-    uint16_t const RPC_DEFAULT_PORT = 38154;
-    uint16_t const ZMQ_RPC_DEFAULT_PORT = 38155;
+    uint16_t const P2P_DEFAULT_PORT = 38056;
+    uint16_t const RPC_DEFAULT_PORT = 38057;
+    uint16_t const ZMQ_RPC_DEFAULT_PORT = 38058;
+    uint16_t const QNET_DEFAULT_PORT = 38059;
     boost::uuids::uuid const NETWORK_ID = { {
         0xbb ,0x37, 0x9B, 0x22 , 0x0A, 0x66 , 0x69, 0x1E, 0x09, 0xB2, 0x97, 0x8A, 0xCC, 0xA1, 0xDF, 0x9C
       } }; // Beep Boop
-    std::string const GENESIS_TX = "021e01ff000380808d93f5d771027c4fd4553bc9886f1f49e3f76d945bf71e8632a94e6c177b19cbc780e7e6bdb48080b4ccd4dfc60302c8b9f6461f58ef3f2107e577c7425d06af584a1c7482bf19060e84059c98b4c3808088fccdbcc32302732b53b0b0db706fcc3087074fb4b786da5ab72b2065699f9453448b0db27f892101ed71f2ce3fc70d7b2036f8a4e4b3fb75c66c12184b55a908e7d1a1d6995566cf00";
+    std::string const GENESIS_TX = "021e01ff000380808d93f5d771027e4490431900c66a6532917ad9e6a1de634a209b708f653097e7b48efc1238c68080b4ccd4dfc60302ba19a224e6474371f9161b2e6271a36d060cbdc2e479ad78f1be64c56576fa07808088fccdbcc32302bccf9c13ba1b5bb02638de6e557acdd46bf48953e42cf98a12d2ad2900cc316121018fc6728d9e3c062d3afae3b2317998d2abee1e12f51271ba1c0d3cdd236b81d200";
     uint32_t const GENESIS_NONCE = 10002;
 
     uint64_t const GOVERNANCE_REWARD_INTERVAL_IN_BLOCKS = ((60 * 60 * 24 * 7) / DIFFICULTY_TARGET_V2);
     std::string const GOVERNANCE_WALLET_ADDRESS[] =
     {
-      "bittXbMBtbUMNEPTw2EjtSPVcoAoqqZw576qMEFs1dTWUcLn7KeD6eFht95qmknM8FTUWUwJMF6zwEQPA5UC47uG7JGYd19rtG", // hardfork v7-9
-      "bittXbMBtbUMNEPTw2EjtSPVcoAoqqZw576qMEFs1dTWUcLn7KeD6eFht95qmknM8FTUWUwJMF6zwEQPA5UC47uG7JGYd19rtG", // hardfork v10
+      "59f7FCwYMiwMnFr8HwsnfJ2hK3DYB1tryhjsfmXqEBJojKyqKeNWoaDaZaauoZPiZHUYp2wJuy5s9H96qy4q9xUVCXXHmTU", // hardfork v7-9
+      "59f7FCwYMiwMnFr8HwsnfJ2hK3DYB1tryhjsfmXqEBJojKyqKeNWoaDaZaauoZPiZHUYp2wJuy5s9H96qy4q9xUVCXXHmTU", // hardfork v10
     };
   }
 }
@@ -259,8 +282,9 @@ namespace cryptonote
     network_version_9_service_nodes, // Proof Of Stake w/ Service Nodes
     network_version_10_bulletproofs, // Bulletproofs, Service Node Grace Registration Period, Batched Governance
     network_version_11_infinite_staking, // Infinite Staking, CN-Turtle
-    network_version_12_checkpointing, // Checkpointing, Relaxed Deregistration, BitToro Storage Server
+    network_version_12_checkpointing, // Checkpointing, Relaxed Deregistration, RandomXL, Loki Storage Server
     network_version_13_enforce_checkpoints,
+    network_version_14_blink_lns,
 
     network_version_count,
   };
@@ -281,6 +305,7 @@ namespace cryptonote
     uint16_t P2P_DEFAULT_PORT;
     uint16_t RPC_DEFAULT_PORT;
     uint16_t ZMQ_RPC_DEFAULT_PORT;
+    uint16_t QNET_DEFAULT_PORT;
     boost::uuids::uuid NETWORK_ID;
     std::string GENESIS_TX;
     uint32_t GENESIS_NONCE;
@@ -296,6 +321,7 @@ namespace cryptonote
       ::config::P2P_DEFAULT_PORT,
       ::config::RPC_DEFAULT_PORT,
       ::config::ZMQ_RPC_DEFAULT_PORT,
+      ::config::QNET_DEFAULT_PORT,
       ::config::NETWORK_ID,
       ::config::GENESIS_TX,
       ::config::GENESIS_NONCE,
@@ -310,6 +336,7 @@ namespace cryptonote
       ::config::testnet::P2P_DEFAULT_PORT,
       ::config::testnet::RPC_DEFAULT_PORT,
       ::config::testnet::ZMQ_RPC_DEFAULT_PORT,
+      ::config::testnet::QNET_DEFAULT_PORT,
       ::config::testnet::NETWORK_ID,
       ::config::testnet::GENESIS_TX,
       ::config::testnet::GENESIS_NONCE,
@@ -324,6 +351,7 @@ namespace cryptonote
       ::config::stagenet::P2P_DEFAULT_PORT,
       ::config::stagenet::RPC_DEFAULT_PORT,
       ::config::stagenet::ZMQ_RPC_DEFAULT_PORT,
+      ::config::stagenet::QNET_DEFAULT_PORT,
       ::config::stagenet::NETWORK_ID,
       ::config::stagenet::GENESIS_TX,
       ::config::stagenet::GENESIS_NONCE,
