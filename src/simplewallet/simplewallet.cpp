@@ -964,12 +964,12 @@ bool simple_wallet::print_fee_info(const std::vector<std::string> &args/* = std:
     uint64_t typical_blink_fee = (base_fee.first * typical_size + base_fee.second * typical_outs) * pct / 100 + fixed;
 
     if (fixed)
-      message_writer() << (boost::format(tr("Current blink fee is %s %s per byte + %s %s per output + %s %s")) %
+      message_writer() << (boost::format(tr("Current flash fee is %s %s per byte + %s %s per output + %s %s")) %
           print_money(base_fee.first * pct / 100) % cryptonote::get_unit(cryptonote::get_default_decimal_point()) %
           print_money(base_fee.second * pct / 100) % cryptonote::get_unit(cryptonote::get_default_decimal_point()) %
           print_money(fixed) % cryptonote::get_unit(cryptonote::get_default_decimal_point())).str();
     else
-      message_writer() << (boost::format(tr("Current blink fee is %s %s per byte + %s %s per output")) %
+      message_writer() << (boost::format(tr("Current flash fee is %s %s per byte + %s %s per output")) %
           print_money(base_fee.first * pct / 100) % cryptonote::get_unit(cryptonote::get_default_decimal_point()) %
           print_money(base_fee.second * pct / 100) % cryptonote::get_unit(cryptonote::get_default_decimal_point())).str();
 
@@ -2853,7 +2853,7 @@ simple_wallet::simple_wallet()
                                   "  action: ask the password before many actions such as transfer, etc\n "
                                   "  decrypt: same as action, but keeps the spend key encrypted in memory when not needed\n "
                                   "unit <xtor|megarok|kilorok|rok>\n "
-                                  "  Set the default xotr (sub-)unit.\n "
+                                  "  Set the default XTOR (sub-)unit.\n "
                                   "min-outputs-count [n]\n "
                                   "  Try to keep at least that many outputs of value at least min-outputs-value.\n "
                                   "min-outputs-value [n]\n "
@@ -3259,7 +3259,7 @@ bool simple_wallet::set_variable(const std::vector<std::string> &args)
     success_msg_writer() << "segregation-height = " << m_wallet->segregation_height();
     success_msg_writer() << "ignore-fractional-outputs = " << m_wallet->ignore_fractional_outputs();
     success_msg_writer() << "track-uses = " << m_wallet->track_uses();
-    success_msg_writer() << "setup-background-mining = " << setup_background_mining_string + tr(" (set this to support the network and to get a chance to receive new BitToro)");
+    success_msg_writer() << "setup-background-mining = " << setup_background_mining_string + tr(" (set this to support the network and to get a chance to receive new XTOR)");
     success_msg_writer() << "device_name = " << m_wallet->device_name();
     return true;
   }
@@ -4751,7 +4751,7 @@ void simple_wallet::check_background_mining(const epee::wipeable_string &passwor
   {
     message_writer() << tr("The daemon is not set up to background mine.");
     message_writer() << tr("With background mining enabled, the daemon will mine when idle and not on batttery.");
-    message_writer() << tr("Enabling this supports the network you are using, and makes you eligible for receiving new BitToro");
+    message_writer() << tr("Enabling this supports the network you are using, and makes you eligible for receiving new XTOR");
     std::string accepted = input_line(tr("Do you want to do it now? (Y/Yes/N/No)"));
     if (std::cin.eof() || !command_line::is_yes(accepted)) {
       m_wallet->setup_background_mining(tools::wallet2::BackgroundMiningNo);
@@ -4999,17 +4999,25 @@ boost::optional<epee::wipeable_string> simple_wallet::on_get_password(const char
   // can't ask for password from a background thread
   if (!m_in_manual_refresh.load(std::memory_order_relaxed))
   {
-    message_writer(console_color_red, false) << boost::format(tr("Password needed (%s) - use the refresh command")) % reason;
-    m_cmd_binder.print_prompt();
+    crypto::hash tx_pool_checksum = m_wallet->get_long_poll_tx_pool_checksum();
+    if (m_password_asked_on_height   != m_wallet->get_blockchain_current_height() ||
+        m_password_asked_on_checksum != tx_pool_checksum)
+    {
+      m_password_asked_on_height = m_wallet->get_blockchain_current_height();
+      m_password_asked_on_checksum   = tx_pool_checksum;
+
+      message_writer(console_color_red, false) << boost::format(tr("Password needed %s")) % reason;
+      m_cmd_binder.print_prompt();
+    }
     return boost::none;
   }
 
 #ifdef HAVE_READLINE
   rdln::suspend_readline pause_readline;
 #endif
-  std::string msg = tr("Enter password");
+  std::string msg = tr("Enter password ");
   if (reason && *reason)
-    msg += std::string(" (") + reason + ")";
+    msg += reason;
   auto pwd_container = tools::password_container::prompt(false, msg.c_str());
   if (!pwd_container)
   {
@@ -5706,7 +5714,7 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
   {
     if (priority == tools::wallet2::BLINK_PRIORITY)
     {
-      fail_msg_writer() << tr("blink priority cannot be used for locked transfers");
+      fail_msg_writer() << tr("flash priority cannot be used for locked transfers");
       return false;
     }
 
@@ -6764,7 +6772,7 @@ bool simple_wallet::sweep_main(uint64_t below, Transfer transfer_type, const std
   uint64_t unlock_block = 0;
   if (transfer_type == Transfer::Locked) {
     if (priority == tools::wallet2::BLINK_PRIORITY) {
-      fail_msg_writer() << tr("blink priority cannot be used for locked transfers");
+      fail_msg_writer() << tr("flash priority cannot be used for locked transfers");
       return false;
     }
     uint64_t locked_blocks = 0;
@@ -8320,7 +8328,18 @@ bool simple_wallet::run()
   refresh_main(0, ResetNone, true);
 
   m_auto_refresh_enabled = m_wallet->auto_refresh();
-  m_idle_thread = boost::thread([&]{wallet_idle_thread();});
+  m_idle_thread          = boost::thread([&] { wallet_idle_thread(); });
+  m_long_poll_thread     = boost::thread([&] {
+    for (;;)
+    {
+      try
+      {
+        if (m_auto_refresh_enabled && m_wallet->long_poll_pool_state())
+          m_idle_cond.notify_one();
+      }
+      catch (...) { }
+    }
+  });
 
   message_writer(console_color_green, false) << "Background refresh thread started";
 
@@ -9261,7 +9280,7 @@ bool simple_wallet::show_transfer(const std::vector<std::string> &args)
       success_msg_writer() << "Incoming transaction found";
       success_msg_writer() << "txid: " << txid;
       if (pd.m_block_height == 0 && pd.m_unmined_blink)
-        success_msg_writer() << "Height: blink (not yet mined)";
+        success_msg_writer() << "Height: flash (not yet mined)";
       else
         success_msg_writer() << "Height: " << pd.m_block_height;
       success_msg_writer() << "Timestamp: " << tools::get_human_readable_timestamp(pd.m_timestamp);
@@ -9349,7 +9368,6 @@ bool simple_wallet::show_transfer(const std::vector<std::string> &args)
 
   try
   {
-    m_wallet->update_pool_state();
     std::list<std::pair<crypto::hash, tools::wallet2::pool_payment_details>> pool_payments;
     m_wallet->get_unconfirmed_payments(pool_payments, m_current_subaddress_account);
     for (std::list<std::pair<crypto::hash, tools::wallet2::pool_payment_details>>::const_iterator i = pool_payments.begin(); i != pool_payments.end(); ++i) {

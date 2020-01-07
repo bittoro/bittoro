@@ -184,7 +184,7 @@ namespace cryptonote
   };
   static const command_line::arg_descriptor<std::string> arg_public_ip = {
     "service-node-public-ip"
-  , "Public IP address on which this service node's services (such as the Loki "
+  , "Public IP address on which this service node's services (such as the BitToro "
     "storage server) are accessible. This IP address will be advertised to the "
     "network via the service node uptime proofs. Required if operating as a "
     "service node."
@@ -436,7 +436,7 @@ namespace cryptonote
 
         if (!epee::net_utils::is_ip_public(m_sn_public_ip)) {
           if (m_service_node_list.debug_allow_local_ips) {
-            MWARNING("Address given for public-ip is not public; allowing it because dev-allow-local-ips was specified. This service node WILL NOT WORK ON THE PUBLIC LOKI NETWORK!");
+            MWARNING("Address given for public-ip is not public; allowing it because dev-allow-local-ips was specified. This service node WILL NOT WORK ON THE PUBLIC BITTORO NETWORK!");
           } else {
             MERROR("Address given for public-ip is not public: " << epee::string_tools::get_ip_string_from_int32(m_sn_public_ip));
             storage_ok = false;
@@ -1196,8 +1196,9 @@ namespace cryptonote
   {
     // Caller needs to do this around both this *and* parse_incoming_txs
     //auto lock = incoming_tx_lock();
-    uint8_t version = m_blockchain_storage.get_current_hard_fork_version();
-    bool ok = true;
+    uint8_t version      = m_blockchain_storage.get_current_hard_fork_version();
+    bool ok              = true;
+    bool tx_pool_changed = false;
     if (blink_rollback_height)
       *blink_rollback_height = 0;
     tx_pool_options tx_opts;
@@ -1223,7 +1224,10 @@ namespace cryptonote
         local_opts = &tx_opts;
       }
       if (m_mempool.add_tx(info.tx, info.tx_hash, *info.blob, weight, info.tvc, *local_opts, version, blink_rollback_height))
+      {
+        tx_pool_changed |= info.tvc.m_added_to_pool;
         MDEBUG("tx added: " << info.tx_hash);
+      }
       else
       {
         ok = false;
@@ -1234,6 +1238,7 @@ namespace cryptonote
       }
     }
 
+    if (tx_pool_changed) m_long_poll_wake_up_clients.notify_all();
     return ok;
   }
   //-----------------------------------------------------------------------------------------------
@@ -1644,7 +1649,7 @@ namespace cryptonote
     cryptonote_connection_context fake_context{};
     bool relayed = get_protocol()->relay_uptime_proof(req, fake_context);
     if (relayed)
-      MGINFO("Submitted uptime-proof for service node (yours): " << m_service_node_keys->pub << " with storage server at " << (epee::net_utils::ipv4_network_address{ m_sn_public_ip, m_storage_port }).str());
+      MGINFO("Submitted uptime-proof for Service Node (yours): " << m_service_node_keys->pub);
 
     return true;
   }
@@ -2010,7 +2015,7 @@ namespace cryptonote
     {
       std::string main_message;
       if (m_offline)
-        main_message = "The daemon is running offline and will not attempt to sync to the Bittoro network.";
+        main_message = "The daemon is running offline and will not attempt to sync to the BitToro network.";
       else
         main_message = "The daemon will start synchronizing with the network. This may take a long time to complete.";
       MGINFO_YELLOW(ENDL << "**********************************************************************" << ENDL
