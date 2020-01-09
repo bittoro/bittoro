@@ -1254,7 +1254,7 @@ bool Blockchain::validate_miner_transaction(const block& b, size_t cumulative_bl
     }
 
     txversion min_version = txversion::v2_ringct; // SEEME no enforcement
-    txversion max_version = transaction::get_min_version_for_hf(version);
+    txversion max_version = transaction::get_max_version_for_hf(version);
     if (b.miner_tx.version < min_version || b.miner_tx.version > max_version)
     {
       MERROR_VER("Coinbase invalid version: " << b.miner_tx.version << " for hardfork: " << version << " min/max version:  " << min_version << "/" << max_version);
