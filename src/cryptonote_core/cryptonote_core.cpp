@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2019, The Monero Project
-// Copyright (c)      2018, The Loki Project
+// Copyright (c)      2018, The BitToro Project
 //
 // All rights reserved.
 //
@@ -965,6 +965,7 @@ namespace cryptonote
   {
     if (m_quorumnet_obj)
       quorumnet_delete(m_quorumnet_obj);
+    m_long_poll_wake_up_clients.notify_all();
     m_service_node_list.store();
     m_miner.stop();
     m_mempool.deinit();
@@ -1995,7 +1996,7 @@ namespace cryptonote
         {
           MGINFO_RED(
               "Failed to submit uptime proof: have not heard from the storage server recently. Make sure that it "
-              "is running! It is required to run alongside the Loki daemon");
+              "is running! It is required to run alongside the BitToro daemon");
           return;
         }
 

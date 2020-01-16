@@ -153,7 +153,7 @@ namespace
   const command_line::arg_descriptor<bool> arg_allow_mismatched_daemon_version = {"allow-mismatched-daemon-version", sw::tr("Allow communicating with a daemon that uses a different RPC version"), false};
   const command_line::arg_descriptor<uint64_t> arg_restore_height = {"restore-height", sw::tr("Restore from specific blockchain height"), 0};
   const command_line::arg_descriptor<std::string> arg_restore_date = {"restore-date", sw::tr("Restore from estimated blockchain height on specified date"), ""};
-  const command_line::arg_descriptor<bool> arg_do_not_relay = {"do-not-relay", sw::tr("The newly created transaction will not be relayed to the BitToro network"), false};
+  const command_line::arg_descriptor<bool> arg_do_not_relay = {"do-not-relay", sw::tr("The newly created transaction will not be relayed to the bittoro network"), false};
   const command_line::arg_descriptor<bool> arg_create_address_file = {"create-address-file", sw::tr("Create an address file for new wallets"), false};
   const command_line::arg_descriptor<std::string> arg_subaddress_lookahead = {"subaddress-lookahead", tools::wallet2::tr("Set subaddress lookahead sizes to <major>:<minor>"), ""};
   const command_line::arg_descriptor<bool> arg_use_english_language_names = {"use-english-language-names", sw::tr("Display English language names"), false};
@@ -255,7 +255,7 @@ namespace
   const char* USAGE_HELP("help [<command>]");
 
   //
-  // Loki
+  // BitToro
   //
   const char* USAGE_REGISTER_SERVICE_NODE("register_service_node [index=<N1>[,<N2>,...]] [<priority>] <operator cut> <address1> <fraction1> [<address2> <fraction2> [...]] <expiration timestamp> <pubkey> <signature>");
   const char* USAGE_STAKE("stake [index=<N1>[,<N2>,...]] [<priority>] <service node pubkey> <amount|percent%>");
@@ -958,7 +958,7 @@ bool simple_wallet::print_fee_info(const std::vector<std::string> &args/* = std:
   auto hf_version = m_wallet->get_hard_fork_version();
   if (hf_version && *hf_version >= HF_VERSION_BLINK)
   {
-    uint64_t pct = m_wallet->get_fee_percent(tools::wallet2::BLINK_PRIORITY);
+    uint64_t pct = m_wallet->get_fee_percent(tools::tx_priority_blink);
     uint64_t fixed = BLINK_BURN_FIXED;
 
     uint64_t typical_blink_fee = (base_fee.first * typical_size + base_fee.second * typical_outs) * pct / 100 + fixed;
@@ -2853,7 +2853,7 @@ simple_wallet::simple_wallet()
                                   "  action: ask the password before many actions such as transfer, etc\n "
                                   "  decrypt: same as action, but keeps the spend key encrypted in memory when not needed\n "
                                   "unit <xtor|megarok|kilorok|rok>\n "
-                                  "  Set the default XTOR (sub-)unit.\n "
+                                  "  Set the default bittoro (sub-)unit.\n "
                                   "min-outputs-count [n]\n "
                                   "  Try to keep at least that many outputs of value at least min-outputs-value.\n "
                                   "min-outputs-value [n]\n "
@@ -3189,7 +3189,7 @@ simple_wallet::simple_wallet()
                            tr("Show the help section or the documentation about a <command>."));
 
   //
-  // Loki
+  // BitToro
   //
   m_cmd_binder.set_handler("register_service_node",
                            boost::bind(&simple_wallet::register_service_node, this, _1),
@@ -3259,7 +3259,7 @@ bool simple_wallet::set_variable(const std::vector<std::string> &args)
     success_msg_writer() << "segregation-height = " << m_wallet->segregation_height();
     success_msg_writer() << "ignore-fractional-outputs = " << m_wallet->ignore_fractional_outputs();
     success_msg_writer() << "track-uses = " << m_wallet->track_uses();
-    success_msg_writer() << "setup-background-mining = " << setup_background_mining_string + tr(" (set this to support the network and to get a chance to receive new XTOR)");
+    success_msg_writer() << "setup-background-mining = " << setup_background_mining_string + tr(" (set this to support the network and to get a chance to receive new BitToro)");
     success_msg_writer() << "device_name = " << m_wallet->device_name();
     return true;
   }
@@ -4751,7 +4751,7 @@ void simple_wallet::check_background_mining(const epee::wipeable_string &passwor
   {
     message_writer() << tr("The daemon is not set up to background mine.");
     message_writer() << tr("With background mining enabled, the daemon will mine when idle and not on batttery.");
-    message_writer() << tr("Enabling this supports the network you are using, and makes you eligible for receiving new XTOR");
+    message_writer() << tr("Enabling this supports the network you are using, and makes you eligible for receiving new BitToro");
     std::string accepted = input_line(tr("Do you want to do it now? (Y/Yes/N/No)"));
     if (std::cin.eof() || !command_line::is_yes(accepted)) {
       m_wallet->setup_background_mining(tools::wallet2::BackgroundMiningNo);
@@ -5712,9 +5712,9 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
   uint64_t locked_blocks = 0;
   if (transfer_type == Transfer::Locked)
   {
-    if (priority == tools::wallet2::BLINK_PRIORITY)
+    if (priority == tools::tx_priority_blink)
     {
-      fail_msg_writer() << tr("flash priority cannot be used for locked transfers");
+      fail_msg_writer() << tr("blink priority cannot be used for locked transfers");
       return false;
     }
 
@@ -5866,7 +5866,7 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
     }
 
     // if we need to check for backlog, check the worst case tx
-    if (m_wallet->confirm_backlog() && priority != tools::wallet2::BLINK_PRIORITY)
+    if (m_wallet->confirm_backlog() && priority != tools::tx_priority_blink)
     {
       std::stringstream prompt;
       double worst_fee_per_byte = std::numeric_limits<double>::max();
@@ -6034,7 +6034,7 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
           return false;
         }
 
-        commit_or_save(signed_tx.ptx, m_do_not_relay, priority == tools::wallet2::BLINK_PRIORITY);
+        commit_or_save(signed_tx.ptx, m_do_not_relay, priority == tools::tx_priority_blink);
       }
       catch (const std::exception& e)
       {
@@ -6063,7 +6063,7 @@ bool simple_wallet::transfer_main(Transfer transfer_type, const std::vector<std:
     }
     else
     {
-      commit_or_save(ptx_vector, m_do_not_relay, priority == tools::wallet2::BLINK_PRIORITY);
+      commit_or_save(ptx_vector, m_do_not_relay, priority == tools::tx_priority_blink);
     }
   }
   catch (const std::exception &e)
@@ -6122,7 +6122,7 @@ bool simple_wallet::register_service_node(const std::vector<std::string> &args_)
   try
   {
     std::vector<tools::wallet2::pending_tx> ptx_vector = {result.ptx};
-    if (!sweep_main_internal(sweep_type_t::register_stake, ptx_vector, info, false /* don't blink */))
+    if (!sweep_main_internal(sweep_type_t::register_stake, ptx_vector, info, false /* don't flash */))
     {
       fail_msg_writer() << tr("Sending register transaction failed");
       return true;
@@ -6237,7 +6237,7 @@ bool simple_wallet::stake(const std::vector<std::string> &args_)
         tools::msg_writer() << stake_result.msg;
 
       std::vector<tools::wallet2::pending_tx> ptx_vector = {stake_result.ptx};
-      if (!sweep_main_internal(sweep_type_t::stake, ptx_vector, info, false /* don't blink */))
+      if (!sweep_main_internal(sweep_type_t::stake, ptx_vector, info, false /* don't flash */))
       {
         fail_msg_writer() << tr("Sending stake transaction failed");
         return true;
@@ -6318,7 +6318,7 @@ bool simple_wallet::request_stake_unlock(const std::vector<std::string> &args_)
 
   try
   {
-    commit_or_save(ptx_vector, m_do_not_relay, false /* don't blink */);
+    commit_or_save(ptx_vector, m_do_not_relay, false /* don't flash */);
   }
   catch (const std::exception &e)
   {
@@ -6560,7 +6560,7 @@ bool simple_wallet::sweep_unmixable(const std::vector<std::string> &args_)
     }
     else
     {
-      commit_or_save(ptx_vector, m_do_not_relay, false /* don't blink */);
+      commit_or_save(ptx_vector, m_do_not_relay, false /* don't flash */);
     }
   }
   catch (const std::exception &e)
@@ -6771,7 +6771,7 @@ bool simple_wallet::sweep_main(uint64_t below, Transfer transfer_type, const std
   priority = m_wallet->adjust_priority(priority);
   uint64_t unlock_block = 0;
   if (transfer_type == Transfer::Locked) {
-    if (priority == tools::wallet2::BLINK_PRIORITY) {
+    if (priority == tools::tx_priority_blink) {
       fail_msg_writer() << tr("flash priority cannot be used for locked transfers");
       return false;
     }
@@ -6900,7 +6900,7 @@ bool simple_wallet::sweep_main(uint64_t below, Transfer transfer_type, const std
   try
   {
     auto ptx_vector = m_wallet->create_transactions_all(below, info.address, info.is_subaddress, outputs, CRYPTONOTE_DEFAULT_TX_MIXIN, unlock_block /* unlock_time */, priority, extra, m_current_subaddress_account, subaddr_indices);
-    sweep_main_internal(sweep_type_t::all_or_below, ptx_vector, info, priority == tools::wallet2::BLINK_PRIORITY);
+    sweep_main_internal(sweep_type_t::all_or_below, ptx_vector, info, priority == tools::tx_priority_blink);
   }
   catch (const std::exception &e)
   {
@@ -7035,7 +7035,7 @@ bool simple_wallet::sweep_single(const std::vector<std::string> &args_)
   {
     // figure out what tx will be necessary
     auto ptx_vector = m_wallet->create_transactions_single(ki, info.address, info.is_subaddress, outputs, CRYPTONOTE_DEFAULT_TX_MIXIN, 0 /* unlock_time */, priority, extra);
-    sweep_main_internal(sweep_type_t::single, ptx_vector, info, priority == tools::wallet2::BLINK_PRIORITY);
+    sweep_main_internal(sweep_type_t::single, ptx_vector, info, priority == tools::tx_priority_blink);
   }
   catch (const std::exception& e)
   {
@@ -7318,7 +7318,7 @@ bool simple_wallet::submit_transfer(const std::vector<std::string> &args_)
       return true;
     }
 
-    // FIXME: store the blink status in the signed_loki_tx somehow?
+    // FIXME: store the flash status in the signed_loki_tx somehow?
     constexpr bool FIXME_blink = false;
 
     commit_or_save(ptx_vector, false, FIXME_blink);
@@ -8329,17 +8329,23 @@ bool simple_wallet::run()
 
   m_auto_refresh_enabled = m_wallet->auto_refresh();
   m_idle_thread          = boost::thread([&] { wallet_idle_thread(); });
-  m_long_poll_thread     = boost::thread([&] {
-    for (;;)
-    {
-      try
+
+  if (!m_wallet->m_long_poll_disabled)
+  {
+    m_long_poll_thread = boost::thread([&] {
+      for (;;)
       {
-        if (m_auto_refresh_enabled && m_wallet->long_poll_pool_state())
-          m_idle_cond.notify_one();
+        try
+        {
+          if (m_auto_refresh_enabled && m_wallet->long_poll_pool_state())
+            m_idle_cond.notify_one();
+        }
+        catch (...)
+        {
+        }
       }
-      catch (...) { }
-    }
-  });
+    });
+  }
 
   message_writer(console_color_green, false) << "Background refresh thread started";
 
