@@ -2528,7 +2528,7 @@ namespace nodetool
     if (address.get_zone() != epee::net_utils::zone::public_)
       return false; // Unable to determine how many connections from host
 
-    const size_t max_connections = m_nettype == cryptonote::MAINNET ? 5 : 20;
+    const size_t max_connections = m_nettype == cryptonote::MAINNET ? 20 : 20;
     size_t count = 0;
 
     m_network_zones.at(epee::net_utils::zone::public_).m_net_server.get_config_object().foreach_connection([&](const p2p_connection_context& cntxt)
