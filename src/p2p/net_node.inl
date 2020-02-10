@@ -1396,7 +1396,7 @@ namespace nodetool
       size_t idx = 0, skipped = 0;
       for (int step = 0; step < 2; ++step)
       {
-        bool skip_duplicate_class_B = step == 0 && m_nettype == cryptonote::MAINNET && false; // relax rules
+        bool skip_duplicate_class_B = step == 0 && m_nettype == cryptonote::MAINNET; // relax rules
         zone.m_peerlist.foreach (use_white_list, [&classB, &filtered, &idx, &skipped, skip_duplicate_class_B, limit, next_needed_pruning_stripe](const peerlist_entry &pe){
           if (filtered.size() >= limit)
             return false;
@@ -2528,7 +2528,7 @@ namespace nodetool
     if (address.get_zone() != epee::net_utils::zone::public_)
       return false; // Unable to determine how many connections from host
 
-    const size_t max_connections = m_nettype == cryptonote::MAINNET ? 20 : 20;
+    const size_t max_connections = m_nettype == cryptonote::MAINNET ? 2 : 2;
     size_t count = 0;
 
     m_network_zones.at(epee::net_utils::zone::public_).m_net_server.get_config_object().foreach_connection([&](const p2p_connection_context& cntxt)
